@@ -25,6 +25,7 @@
         <module>Shore-control</module>
         <module>Ship-A</module>
         <module>keyexchange</module>
+        <module>KeyExchangeProtocol</module>
     </modules>
 
     <properties>

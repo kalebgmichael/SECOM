@@ -1,6 +1,7 @@
 package com.productcnit.Service;
 
-import org.springframework.context.annotation.Scope;
+import com.productcnit.repository.KeyPairRespository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.KeyAgreement;
@@ -18,6 +19,8 @@ public class KeyManager {
     private  PrivateKey privateKeyfromStr;
     private  PublicKey peerpublicKey;
 
+    @Autowired
+   private KeyPairRespository keyPairRespository;
     public static void generateKeyPair() {
         try {
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DH");
@@ -71,6 +74,8 @@ public class KeyManager {
             return null;
         }
     }
+
+
 
     private static String encode(byte[] data) {
         return Base64.getEncoder().encodeToString(data);
