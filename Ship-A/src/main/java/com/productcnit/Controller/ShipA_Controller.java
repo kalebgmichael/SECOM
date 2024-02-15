@@ -10,8 +10,11 @@ import org.springframework.web.client.RestTemplate;
 import java.security.NoSuchAlgorithmException;
 
 @RestController
-@RequestMapping("/Ship")
+@RequestMapping("/api/ship")
 public class ShipA_Controller {
-
+    @GetMapping("/resource")
+    public String getResource() {
+        return "This is a secured resource";
+    }
 
 }

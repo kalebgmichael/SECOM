@@ -4,6 +4,7 @@
     <file url="file://$PROJECT_DIR$/DecSymmetric/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/DecryptionKey/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Diffie-Hellman/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/Discovery-server/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/EncSymmetric/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Encryption/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Encryption_key/src/main/java" charset="UTF-8" />
@@ -14,6 +15,7 @@
     <file url="file://$PROJECT_DIR$/Mutual-server/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Ship-A/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/Shore-control/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/api-gateway/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/keyexchange/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />

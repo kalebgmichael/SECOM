@@ -1,22 +1,32 @@
 package com.productcnit.Controller;
 
 
+import com.nimbusds.jose.shaded.gson.Gson;
 import com.productcnit.Service.KeyManager;
+import com.productcnit.dto.GenKeyPairResponse;
 import com.productcnit.dto.KeyPairResponse;
 import com.productcnit.dto.PublicKeyMessage;
+import com.productcnit.dto.SenRecResponse;
 import com.productcnit.model.KeyPair;
+import com.productcnit.repository.GeneralKeyPairRepository;
 import com.productcnit.repository.KeyPairRespository;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/key")
+@RequestMapping("/api/key")
+@CrossOrigin("*")
 public class KeyexchangeController {
 
 
@@ -34,15 +44,22 @@ public class KeyexchangeController {
 
     @Autowired
     private KeyPairRespository keyPairRespository;
+
+    @Autowired
+    private GeneralKeyPairRepository generalKeyPairRepository;
     @Autowired
     private final HttpSession session;
 
     private final KafkaTemplate<String, PublicKeyMessage> kafkaTemplate;
+    private final KafkaTemplate<String, GenKeyPairResponse> kafkaTemplate1;
 
-    public KeyexchangeController(KeyManager keyManager, HttpSession session, KafkaTemplate<String, PublicKeyMessage> kafkaTemplate) {
+
+
+    public KeyexchangeController(KeyManager keyManager, HttpSession session, KafkaTemplate<String, PublicKeyMessage> kafkaTemplate, KafkaTemplate<String, GenKeyPairResponse> kafkaTemplate1) {
         this.keyManager = keyManager;
         this.session = session;
         this.kafkaTemplate = kafkaTemplate;
+        this.kafkaTemplate1 = kafkaTemplate1;
     }
 
 
@@ -96,10 +113,47 @@ public class KeyexchangeController {
 
     }
 
+    @KafkaListener(topics = "Save-Gen-keypair-topic", groupId = "group-id3")
+    public KeyPairResponse SaveGenKeyPair(SenRecResponse senRecResponse) {
+
+        String CurrentuserId = userName(SecurityContextHolder.getContext().getAuthentication());
+        System.out.println("currentid "+CurrentuserId);
+        String Owner_ID = senRecResponse.getGen_Owner_Id();
+        String userId = senRecResponse.getGen_User_Id();
+        System.out.println("this userid "+userId);
+
+        GenKeyPairResponse keys= generalKeyPairRepository.findKeypairbyId(Owner_ID);
+        if(keys != null)
+        {
+
+          System.out.println("Data already exists in cache");
+          return null;
+        }
+        else
+        {
+            KeyManager.generateKeyPair();
+            String privateKey = keyManager.generatePrviatekey();
+            String publicKey = keyManager.generatePublicKey();
+//            session.setAttribute("privateKeyx", privateKey);
+//            session.setAttribute("publicKeyx", publicKey);
+            System.out.println("Private Key: " + privateKey);
+            System.out.println("Public Key: " + publicKey);
+            keyPairResponse= new KeyPairResponse(publicKey,privateKey);
+            // Save the generated key pair to the repository
+            GenKeyPairResponse genKeyPairResponse= new GenKeyPairResponse(Owner_ID,userId,privateKey,publicKey);
+            generalKeyPairRepository.save(genKeyPairResponse);
+            System.out.println("Saved data to cache by "+ userId);
+
+
+            return keyPairResponse;
+        }
+
+    }
+
     @KafkaListener(topics = "key-pair-topic", groupId = "group-id2")
     public String getsecsharedkey(PublicKeyMessage publicKeyMessage) {
-        System.out.println("private"+privateKey);
-        System.out.println("public"+publicKey);
+//        System.out.println("private"+privateKey);
+//        System.out.println("public"+publicKey);
         String peerPublicKey = publicKeyMessage.getPublicKey();
         keyManager.initFromStringsPublickey(publicKey);
         keyManager.initFromStringsPrvkey(privateKey);
@@ -126,6 +180,100 @@ public class KeyexchangeController {
    {
        return keyPairRespository.findall();
    }
+
+    @PostMapping("/GenSave_keypair")
+    public GenKeyPairResponse SaveGen(@RequestBody GenKeyPairResponse genKeyPairResponse)
+    {
+        return generalKeyPairRepository.save(genKeyPairResponse);
+    }
+    @GetMapping("/Gengetkeypair/{Id}")
+    public GenKeyPairResponse findGenkeypair(@PathVariable String Id)
+    {
+        GenKeyPairResponse keys= generalKeyPairRepository.findKeypairbyId(Id);
+
+        System.out.println("this is private "+keys.getGen_private_Key()+"this is public "+keys.getGen_public_Key());
+        return keys;
+    }
+    @GetMapping("/GenDelkeypair/{Id}")
+    public String DeleteGenkeypair(@PathVariable String Id)
+    {
+        String keys= generalKeyPairRepository.deletekeypair(Id);
+
+        return "keys deleted sucessfully";
+    }
+    @GetMapping("/Genfindall")
+    public List<Object> findGenall()
+    {
+        return generalKeyPairRepository.findall();
+    }
+
+    @GetMapping("/home1")
+    public String home1(Authentication authentication) {
+        if (authentication != null && authentication.getPrincipal() instanceof OAuth2User) {
+            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+            String userId = oauth2User.getAttribute("preferred_username");
+            if (userId != null) {
+                return "User ID: " + userId;
+            } else {
+                return "User ID not available";
+            }
+        } else {
+            return "User ID not available";
+        }
+    }
+
+    @GetMapping("/userinfo")
+    public String getUserInfo() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof DefaultOidcUser) {
+            DefaultOidcUser oidcUser = (DefaultOidcUser) authentication.getPrincipal();
+            String userId = oidcUser.getName(); // Or any other attribute that contains the user ID
+            return "User ID: " + userId;
+        } else {
+            return "User not authenticated";
+        }
+    }
+    @GetMapping("/userName")
+    public String userName(Authentication authentication) {
+        if (authentication != null && authentication.getPrincipal() instanceof OAuth2User) {
+            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+            String userId = oauth2User.getAttribute("preferred_username");
+            if (userId != null) {
+                return "User ID: " + userId;
+            } else {
+                return "User ID not available";
+            }
+        } else {
+            return "User ID not available";
+        }
+    }
+    @GetMapping("/userId")
+    public String getuserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof DefaultOidcUser) {
+            DefaultOidcUser oidcUser = (DefaultOidcUser) authentication.getPrincipal();
+            String userId = oidcUser.getName(); // Or any other attribute that contains the user ID
+            return "User ID: " + userId;
+        } else {
+            return "User not authenticated";
+        }
+    }
+
+    @GetMapping("/OwnerID")
+    public String Owner_ID(Authentication authentication) {
+        if (authentication != null && authentication.getPrincipal() instanceof OAuth2User) {
+            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
+            String ownerId = (String) oauth2User.getAttribute("Owner_ID");
+            if (ownerId != null) {
+                return "Owner ID: " + ownerId;
+            } else {
+                return "Owner ID not available";
+            }
+        } else {
+            return "User ID not available";
+        }
+    }
+
 
 
 

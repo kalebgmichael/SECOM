@@ -8,11 +8,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PublicKeyMessage {
-    private String senderId;
-    private String publicKey;
-    private String recId;
+public class KeyPairResponse {
+    private String privatekey;
+    private String publickey;
 }
-
-
-
