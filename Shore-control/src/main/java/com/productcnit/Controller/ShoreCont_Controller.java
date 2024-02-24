@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@RestController
+@Controller
 @RequestMapping("/api/Shore")
 @CrossOrigin("*")
 public class ShoreCont_Controller {
@@ -104,7 +104,7 @@ public class ShoreCont_Controller {
 //    }
 
     @GetMapping("/userId2")
-    private ResponseEntity<Map<String, String>> getUserId2(Authentication authentication) {
+    private String  getUserId2(Authentication authentication) {
         Map<String, String> response = new HashMap<>();
 
         try {
@@ -124,15 +124,16 @@ public class ShoreCont_Controller {
             String username = String.format("%s %s", firstName, lastName);
             String ownerid = (String) claims.get("Owner_ID"); // Adjust claim key if needed
             System.out.println("ownerid"+ ownerid);
+            System.out.println("email"+ email);
 
             response.put("email", email);
             response.put("username", username); // You can add more profile details as needed
 
-            return ResponseEntity.ok(response);
+            return ownerid;
         } catch (Exception e) {
             //log.error("Error retrieving user information from JWT:", e);
             response.put("error", "Failed to retrieve user information");
-            return ResponseEntity.badRequest().body(response);
+            return "error faild to retrive";
         }
     }
 

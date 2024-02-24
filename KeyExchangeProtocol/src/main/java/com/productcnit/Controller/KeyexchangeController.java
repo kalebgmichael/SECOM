@@ -11,6 +11,7 @@ import com.productcnit.model.KeyPair;
 import com.productcnit.repository.GeneralKeyPairRepository;
 import com.productcnit.repository.KeyPairRespository;
 import jakarta.servlet.http.HttpSession;
+import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -19,8 +20,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +41,16 @@ public class KeyexchangeController {
     private  String PUBLIC_KEY_STRINGS="MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCAQLQjHVXBTFYFfzlIKvuBCX6mZmAQfvGpAVSGhnXZ9g3Tha4FKsi9BTUlz2zwPtkzINLfUYIRPf71Q5hCk4Y7QAcJH3AviTnCasAwG7KBDzGYFM/ka52kiol/0vMVSle1o9d9ZTzF+9pJ+GkoF5ykFF62y7mrx9yopFSucezaCQIDAQAB";
     private  String PRIVATE_KEY_STRINGS="MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAIBAtCMdVcFMVgV/OUgq+4EJfqZmYBB+8akBVIaGddn2DdOFrgUqyL0FNSXPbPA+2TMg0t9RghE9/vVDmEKThjtABwkfcC+JOcJqwDAbsoEPMZgUz+RrnaSKiX/S8xVKV7Wj131lPMX72kn4aSgXnKQUXrbLuavH3KikVK5x7NoJAgMBAAECgYA2uWUjxpSc0jGyTsLmZFDEkoSUBALhhwkekA69CAqpYjAsHVJPqh3Vaa9v3r4hFPAgvNS9rU3OhaGQjbMeVUxkx9GVt2LUnGMX/M5yFh7OZl7cMtebhoeEt0z5SXI3NULiEKKjHgXwTc4DaA+lcp/gxSNDQNlSFJWhfvTUQDqosQJBAJ8nPN0eOesTaCCzATO3FpkcuhQ9XLhAQTvbzYb67gtK+4Vh8pBAEFLEuKZAmBidub63Lv50cLnm/1L7+4Y6+H8CQQDOS871vu+n914il1GBZ81IqbwKki3IWx/d6iXz1UlXyOEMgniNpQYKW8EWzvrT/lXDlTe3VKgpBfllpgIBySl3AkBzmfmglxr0wDTrQ3qFCOEWOAKFPwkBIFMB2qdP+yY696z4dmvNEWuJ4zBIOjT/9Fj9yWsOEp/quHoO2c8Z8e2bAkB05i5bwRuq8ZjNPzP3gWupXk1pLBZ3b3OqW7Gv70/FR9aHMTPBCB9ZJU9Qbm9iS8AruVW+NGGqBXGisSR4AJbXAkAjPxbNZsSfeJZY/AkU2SNbIvHnLACQvRwJwibvzAkDfJ4t1gVohi+enBO91slbMT+tQGD9qnLxDJpso4B3rmSG";
 
+
+
+    private RestTemplate restTemplate;
+
+
+
+    private Authentication authentication;
+
+
+    private final WebClient webClient = WebClient.builder().build();
     private String privateKey;
     private String publicKey;
     KeyPairResponse keyPairResponse;
@@ -60,6 +76,7 @@ public class KeyexchangeController {
         this.session = session;
         this.kafkaTemplate = kafkaTemplate;
         this.kafkaTemplate1 = kafkaTemplate1;
+        this.restTemplate=new RestTemplate();
     }
 
 
@@ -90,6 +107,10 @@ public class KeyexchangeController {
     @KafkaListener(topics = "key-pair-topic", groupId = "group-id1")
     public KeyPairResponse getpairkey(PublicKeyMessage publicKeyMessage) {
         System.out.println(publicKeyMessage.getRecId());
+
+
+
+
         String clientidx= publicKeyMessage.getRecId();
         if(clientidx.equals(recid))
         {
@@ -122,6 +143,18 @@ public class KeyexchangeController {
         String userId = senRecResponse.getGen_User_Id();
         System.out.println("this userid "+userId);
 
+//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+//        String loggedInUserId = authentication.getName();
+//        System.out.println("loggedinuserid"+loggedInUserId);
+
+//        ResponseEntity<List<GenKeyPairResponse>> responseEntity = webClient.get()
+//                .uri("http://SHORE-SERVICE/api/Shore/userId2")
+//                .retrieve()
+//                .toEntityList(GenKeyPairResponse.class)
+//                .block();
+//
+//        System.out.println(responseEntity);
+
         GenKeyPairResponse keys= generalKeyPairRepository.findKeypairbyId(Owner_ID);
         if(keys != null)
         {
@@ -148,6 +181,95 @@ public class KeyexchangeController {
             return keyPairResponse;
         }
 
+    }
+
+    @GetMapping("/getownerid")
+    public String getOwnerId(Authentication authentication) {
+        Jwt jwt = (Jwt) authentication.getPrincipal();
+        String tokenValue = jwt.getTokenValue();
+        //System.out.println(tokenValue);
+        String ownerid = getUserId2(authentication);
+        System.out.println("ownerid" + ownerid);
+        // Make a GET request to obtain the owner ID
+//        String ownerId = restTemplate.getForObject("http://localhost:8080/api/key/userId2", String.class);
+        // Retrieve current logged-in user's ID
+        String loggedInUserId = authentication.getName(); // Assuming Keycloak is integrated for authentication
+        System.out.println("loggedInUserId"+loggedInUserId);
+
+
+        String ownerId = webClient.get()
+                .uri("http://localhost:8080/api/Shore/userId2")
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+        return "This is a message from keyexchange: " + ownerId;
+    }
+
+//        DefaultOidcUser oidcUser = (DefaultOidcUser) authentication.getPrincipal();
+//        String tokenValue = oidcUser.getIdToken().getTokenValue();
+//
+//        String response = webClient.get()
+//                .uri("http://localhost:8080/api/key/userId2")
+//                .headers(httpHeaders -> httpHeaders.setBearerAuth(tokenValue))
+//                .retrieve()
+//                .bodyToMono(String.class)
+//                .block();
+//        return "This is message from keyexchange " + response;
+//        String authToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
+//
+//        String response = webClient.get()
+//                .uri("http://localhost:8080/api/key/userId2")
+//                .headers(headers -> headers.setBearerAuth(authToken))
+//                .retrieve()
+//                .bodyToMono(String.class)
+//                .block();
+//
+//        System.out.println(response);
+//        return response;
+
+    private String getToken(Authentication authentication) {
+        if (authentication instanceof JwtAuthenticationToken) {
+            System.out.println("this is the token response");
+            return ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
+        } else {
+            throw new IllegalArgumentException("Authentication is not JWT");
+        }
+    }
+
+    @GetMapping("/userId2")
+    private String  getUserId2(Authentication authentication) {
+//        Map<String, String> response = new HashMap<>();
+
+        try {
+            if (!(authentication instanceof JwtAuthenticationToken)) {
+                throw new SecurityException("Invalid authentication type");
+            }
+
+            Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+            Map<String, Object> claims = jwt.getClaims();
+
+            System.out.println("claims"+claims);
+
+            // Extract profile and email claims
+            String email = (String) claims.get("email"); // Adjust claim key if needed
+            String firstName = (String) claims.get("firstName"); // Adjust claim key if needed
+            String lastName = (String) claims.get("lastName"); // Adjust claim key if needed
+
+            // Combine for a username-like identifier (optional)
+            String username = String.format("%s %s", firstName, lastName);
+            String ownerid = (String) claims.get("Owner_ID"); // Adjust claim key if needed
+            System.out.println("ownerid"+ ownerid);
+            System.out.println("email"+ email);
+//
+//            response.put("email", email);
+//            response.put("username", username); // You can add more profile details as needed
+
+            return ownerid;
+        } catch (Exception e) {
+            //log.error("Error retrieving user information from JWT:", e);
+//            response.put("error", "Failed to retrieve user information");
+            return "error faild to retrive";
+        }
     }
 
     @KafkaListener(topics = "key-pair-topic", groupId = "group-id2")

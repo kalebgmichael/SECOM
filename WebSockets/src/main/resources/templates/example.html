@@ -20,7 +20,7 @@
     }
 
     // Connect to WebSocket server
-    const socket = new SockJS('/api/socket/chat-websocket');
+    const socket = new SockJS('/chat-websocket');
     const stompClient = Stomp.over(socket);
 
     stompClient.connect({}, function (frame) {

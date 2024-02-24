@@ -28,6 +28,7 @@
         <module>KeyExchangeProtocol</module>
         <module>Discovery-server</module>
         <module>api-gateway</module>
+        <module>WebSockets</module>
     </modules>
 
     <properties>

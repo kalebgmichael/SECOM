@@ -10,6 +10,7 @@ import java.security.Principal;
 public class HomeController {
     @GetMapping("/")
     public String index(Principal principal) {
+
         return principal.getName();
     }
 }
