@@ -9,7 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MessageToSend {
+
     private String sender;
+    private String rec;
     private String text;
     private String time;
 }

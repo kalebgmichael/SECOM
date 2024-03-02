@@ -28,7 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Controller
+@RestController
 @RequestMapping("/api/Shore")
 @CrossOrigin("*")
 public class ShoreCont_Controller {

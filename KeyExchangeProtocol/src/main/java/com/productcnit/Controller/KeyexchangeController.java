@@ -143,18 +143,6 @@ public class KeyexchangeController {
         String userId = senRecResponse.getGen_User_Id();
         System.out.println("this userid "+userId);
 
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        String loggedInUserId = authentication.getName();
-//        System.out.println("loggedinuserid"+loggedInUserId);
-
-//        ResponseEntity<List<GenKeyPairResponse>> responseEntity = webClient.get()
-//                .uri("http://SHORE-SERVICE/api/Shore/userId2")
-//                .retrieve()
-//                .toEntityList(GenKeyPairResponse.class)
-//                .block();
-//
-//        System.out.println(responseEntity);
-
         GenKeyPairResponse keys= generalKeyPairRepository.findKeypairbyId(Owner_ID);
         if(keys != null)
         {
