@@ -108,9 +108,6 @@ public class KeyexchangeController {
     public KeyPairResponse getpairkey(PublicKeyMessage publicKeyMessage) {
         System.out.println(publicKeyMessage.getRecId());
 
-
-
-
         String clientidx= publicKeyMessage.getRecId();
         if(clientidx.equals(recid))
         {
@@ -136,9 +133,6 @@ public class KeyexchangeController {
 
     @KafkaListener(topics = "Save-Gen-keypair-topic", groupId = "group-id3")
     public KeyPairResponse SaveGenKeyPair(SenRecResponse senRecResponse) {
-
-        String CurrentuserId = userName(SecurityContextHolder.getContext().getAuthentication());
-        System.out.println("currentid "+CurrentuserId);
         String Owner_ID = senRecResponse.getGen_Owner_Id();
         String userId = senRecResponse.getGen_User_Id();
         System.out.println("this userid "+userId);
@@ -146,6 +140,23 @@ public class KeyexchangeController {
         GenKeyPairResponse keys= generalKeyPairRepository.findKeypairbyId(Owner_ID);
         if(keys != null)
         {
+            KeyManager.generateKeyPair();
+            String privateKey = keyManager.generatePrviatekey();
+            String publicKey = keyManager.generatePublicKey();
+//            session.setAttribute("privateKeyx", privateKey);
+//            session.setAttribute("publicKeyx", publicKey);
+            System.out.println("Private Key: " + privateKey);
+            System.out.println("Public Key: " + publicKey);
+            keyPairResponse= new KeyPairResponse(publicKey,privateKey);
+
+            keyManager.initFromStringsPublickey(publicKey);
+            keyManager.initFromStringsPrvkey(privateKey);
+            String sharedKey = keyManager.generateSharedSecret();
+            System.out.println("the shared key is "+sharedKey);
+            // Save the generated key pair to the repository
+            GenKeyPairResponse genKeyPairResponse= new GenKeyPairResponse(Owner_ID,userId,privateKey,publicKey);
+            System.out.println("private" +genKeyPairResponse.getGen_private_Key());
+            System.out.println("public" +genKeyPairResponse.getGen_public_Key());
 
           System.out.println("Data already exists in cache");
           return null;
@@ -160,6 +171,11 @@ public class KeyexchangeController {
             System.out.println("Private Key: " + privateKey);
             System.out.println("Public Key: " + publicKey);
             keyPairResponse= new KeyPairResponse(publicKey,privateKey);
+
+            keyManager.initFromStringsPublickey(publicKey);
+            keyManager.initFromStringsPrvkey(privateKey);
+            String sharedKey = keyManager.generateSharedSecret();
+            System.out.println("the shared key is "+sharedKey);
             // Save the generated key pair to the repository
             GenKeyPairResponse genKeyPairResponse= new GenKeyPairResponse(Owner_ID,userId,privateKey,publicKey);
             generalKeyPairRepository.save(genKeyPairResponse);
@@ -171,58 +187,6 @@ public class KeyexchangeController {
 
     }
 
-    @GetMapping("/getownerid")
-    public String getOwnerId(Authentication authentication) {
-        Jwt jwt = (Jwt) authentication.getPrincipal();
-        String tokenValue = jwt.getTokenValue();
-        //System.out.println(tokenValue);
-        String ownerid = getUserId2(authentication);
-        System.out.println("ownerid" + ownerid);
-        // Make a GET request to obtain the owner ID
-//        String ownerId = restTemplate.getForObject("http://localhost:8080/api/key/userId2", String.class);
-        // Retrieve current logged-in user's ID
-        String loggedInUserId = authentication.getName(); // Assuming Keycloak is integrated for authentication
-        System.out.println("loggedInUserId"+loggedInUserId);
-
-
-        String ownerId = webClient.get()
-                .uri("http://localhost:8080/api/Shore/userId2")
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-        return "This is a message from keyexchange: " + ownerId;
-    }
-
-//        DefaultOidcUser oidcUser = (DefaultOidcUser) authentication.getPrincipal();
-//        String tokenValue = oidcUser.getIdToken().getTokenValue();
-//
-//        String response = webClient.get()
-//                .uri("http://localhost:8080/api/key/userId2")
-//                .headers(httpHeaders -> httpHeaders.setBearerAuth(tokenValue))
-//                .retrieve()
-//                .bodyToMono(String.class)
-//                .block();
-//        return "This is message from keyexchange " + response;
-//        String authToken = ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
-//
-//        String response = webClient.get()
-//                .uri("http://localhost:8080/api/key/userId2")
-//                .headers(headers -> headers.setBearerAuth(authToken))
-//                .retrieve()
-//                .bodyToMono(String.class)
-//                .block();
-//
-//        System.out.println(response);
-//        return response;
-
-    private String getToken(Authentication authentication) {
-        if (authentication instanceof JwtAuthenticationToken) {
-            System.out.println("this is the token response");
-            return ((JwtAuthenticationToken) authentication).getToken().getTokenValue();
-        } else {
-            throw new IllegalArgumentException("Authentication is not JWT");
-        }
-    }
 
     @GetMapping("/userId2")
     private String  getUserId2(Authentication authentication) {
@@ -260,272 +224,232 @@ public class KeyexchangeController {
         }
     }
 
+
+    @GetMapping("/sharedkey")
     @KafkaListener(topics = "key-pair-topic", groupId = "group-id2")
-    public String getsecsharedkey(PublicKeyMessage publicKeyMessage) {
+    public String getsecsharedkey(@RequestParam("Ownerid") String Ownerid) {
 //        System.out.println("private"+privateKey);
 //        System.out.println("public"+publicKey);
-        String peerPublicKey = publicKeyMessage.getPublicKey();
-        keyManager.initFromStringsPublickey(publicKey);
-        keyManager.initFromStringsPrvkey(privateKey);
+//        String peerPublicKey = publicKeyMessage.getPublicKey();
+        GenKeyPairResponse keys = generalKeyPairRepository.findKeypairbyId(Ownerid);
+        System.out.println("publickey"+keys.getGen_public_Key().toString());
+        System.out.println("privatekey"+keys.getGen_private_Key().toString());
+//        KeyManager.generateKeyPair();
+        keyManager.initFromStringsPublickey(keys.getGen_public_Key().toString());
+        keyManager.initFromStringsPrvkey(keys.getGen_private_Key().toString());
         String sharedKey = keyManager.generateSharedSecret();
         System.out.println("the shared key is "+sharedKey);
-        return sharedKey;
+        return "sharedKey";
     }
+    // key-pair CRUD handling
 
-   @PostMapping("/savekeypair")
-    public KeyPair save(@RequestBody KeyPair keyPair)
-   {
-       return keyPairRespository.save(keyPair);
-   }
-   @GetMapping("/getkeypair/{Id}")
-    public KeyPair findkeypair(@PathVariable String Id)
-   {
-       KeyPair keys= keyPairRespository.findKeypairbyId(Id);
+    // key-pair CRUD handling
 
-       System.out.println("this is private "+keys.getPrivateKey()+"this is public "+keys.getPublicKey());
-       return keys;
-   }
-   @GetMapping("/findall")
-    public List<Object> findall()
-   {
-       return keyPairRespository.findall();
-   }
-
-    @PostMapping("/GenSave_keypair")
-    public GenKeyPairResponse SaveGen(@RequestBody GenKeyPairResponse genKeyPairResponse)
-    {
-        return generalKeyPairRepository.save(genKeyPairResponse);
-    }
-    @GetMapping("/Gengetkeypair/{Id}")
-    public GenKeyPairResponse findGenkeypair(@PathVariable String Id)
-    {
-        GenKeyPairResponse keys= generalKeyPairRepository.findKeypairbyId(Id);
-
-        System.out.println("this is private "+keys.getGen_private_Key()+"this is public "+keys.getGen_public_Key());
-        return keys;
-    }
-    @GetMapping("/GenDelkeypair/{Id}")
-    public String DeleteGenkeypair(@PathVariable String Id)
-    {
-        String keys= generalKeyPairRepository.deletekeypair(Id);
-
-        return "keys deleted sucessfully";
-    }
-    @GetMapping("/Genfindall")
-    public List<Object> findGenall()
-    {
-        return generalKeyPairRepository.findall();
-    }
-
-    @GetMapping("/home1")
-    public String home1(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof OAuth2User) {
-            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-            String userId = oauth2User.getAttribute("preferred_username");
-            if (userId != null) {
-                return "User ID: " + userId;
-            } else {
-                return "User ID not available";
-            }
-        } else {
-            return "User ID not available";
+    @PostMapping("/savekeypair")
+    public KeyPair save(@RequestBody KeyPair keyPair) {
+        try {
+            return keyPairRespository.save(keyPair);
+        } catch (Exception e) {
+            // Handle exception (e.g., log it)
+            e.printStackTrace();
+            return null;
         }
     }
 
-    @GetMapping("/userinfo")
-    public String getUserInfo() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof DefaultOidcUser) {
-            DefaultOidcUser oidcUser = (DefaultOidcUser) authentication.getPrincipal();
-            String userId = oidcUser.getName(); // Or any other attribute that contains the user ID
-            return "User ID: " + userId;
-        } else {
-            return "User not authenticated";
+    @GetMapping("/getkeypair/{Id}")
+    public KeyPair findkeypair(@PathVariable String Id) {
+        try {
+            KeyPair keys = keyPairRespository.findKeypairbyId(Id);
+            System.out.println("this is private " + keys.getPrivateKey() + "this is public " + keys.getPublicKey());
+            return keys;
+        } catch (Exception e) {
+            // Handle exception (e.g., log it)
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @GetMapping("/findall")
+    public List<Object> findall() {
+        try {
+            return keyPairRespository.findall();
+        } catch (Exception e) {
+            // Handle exception (e.g., log it)
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+// Gen key-pair CRUD handling
+
+    @PostMapping("/GenSave_keypair")
+    public GenKeyPairResponse SaveGen(@RequestBody GenKeyPairResponse genKeyPairResponse) {
+        try {
+            return generalKeyPairRepository.save(genKeyPairResponse);
+        } catch (Exception e) {
+            // Handle exception (e.g., log it)
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @GetMapping("/Gengetkeypair/{Id}")
+    public GenKeyPairResponse findGenkeypair(@PathVariable String Id) {
+        try {
+            GenKeyPairResponse keys = generalKeyPairRepository.findKeypairbyId(Id);
+            System.out.println("this is private " + keys.getGen_private_Key() + "this is public " + keys.getGen_public_Key());
+            return keys;
+        } catch (Exception e) {
+            // Handle exception (e.g., log it)
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @GetMapping("/GenDelkeypair/{Id}")
+    public String DeleteGenkeypair(@PathVariable String Id) {
+        try {
+            String keys = generalKeyPairRepository.deletekeypair(Id);
+            return "keys deleted successfully";
+        } catch (Exception e) {
+            // Handle exception (e.g., log it)
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @GetMapping("/Genfindall")
+    public List<Object> findGenall() {
+        try {
+            return generalKeyPairRepository.findall();
+        } catch (Exception e) {
+            // Handle exception (e.g., log it)
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+//   @PostMapping("/savekeypair")
+//    public KeyPair save(@RequestBody KeyPair keyPair)
+//   {
+//       return keyPairRespository.save(keyPair);
+//   }
+//   @GetMapping("/getkeypair/{Id}")
+//    public KeyPair findkeypair(@PathVariable String Id)
+//   {
+//       KeyPair keys= keyPairRespository.findKeypairbyId(Id);
+//
+//       System.out.println("this is private "+keys.getPrivateKey()+"this is public "+keys.getPublicKey());
+//       return keys;
+//   }
+//   @GetMapping("/findall")
+//    public List<Object> findall()
+//   {
+//       return keyPairRespository.findall();
+//   }
+//
+//
+//    // Gen key-pair CRUD handling
+//
+//    @PostMapping("/GenSave_keypair")
+//    public GenKeyPairResponse SaveGen(@RequestBody GenKeyPairResponse genKeyPairResponse)
+//    {
+//        return generalKeyPairRepository.save(genKeyPairResponse);
+//    }
+//    @GetMapping("/Gengetkeypair/{Id}")
+//    public GenKeyPairResponse findGenkeypair(@PathVariable String Id)
+//    {
+//        GenKeyPairResponse keys= generalKeyPairRepository.findKeypairbyId(Id);
+//
+//        System.out.println("this is private "+keys.getGen_private_Key()+"this is public "+keys.getGen_public_Key());
+//        return keys;
+//    }
+//    @GetMapping("/GenDelkeypair/{Id}")
+//    public String DeleteGenkeypair(@PathVariable String Id)
+//    {
+//        String keys= generalKeyPairRepository.deletekeypair(Id);
+//
+//        return "keys deleted sucessfully";
+//    }
+//    @GetMapping("/Genfindall")
+//    public List<Object> findGenall()
+//    {
+//        return generalKeyPairRepository.findall();
+//    }
+
+
+    // User Info
+
+    @GetMapping("/userId")
+    public String userName(Authentication authentication) {
+
+        try {
+            if (!(authentication instanceof JwtAuthenticationToken)) {
+                throw new SecurityException("Invalid authentication type");
+            }
+
+            Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+            Map<String, Object> claims = jwt.getClaims();
+
+            System.out.println("claims"+claims);
+
+            // Extract profile and email claims
+            String email = (String) claims.get("email");
+            String  userId =authentication.getName();
+//            System.out.println("email"+ email);
+            System.out.println("userId"+ userId);
+            return userId;
+        } catch (Exception e) {
+            //log.error("Error retrieving user information from JWT:", e);
+//            response.put("error", "Failed to retrieve user information");
+            return "error faild to retrive userId";
         }
     }
     @GetMapping("/userName")
-    public String userName(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof OAuth2User) {
-            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-            String userId = oauth2User.getAttribute("preferred_username");
-            if (userId != null) {
-                return "User ID: " + userId;
-            } else {
-                return "User ID not available";
+    public String getuserId( Authentication authentication) {
+
+        try {
+            if (!(authentication instanceof JwtAuthenticationToken)) {
+                throw new SecurityException("Invalid authentication type");
             }
-        } else {
-            return "User ID not available";
-        }
-    }
-    @GetMapping("/userId")
-    public String getuserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof DefaultOidcUser) {
-            DefaultOidcUser oidcUser = (DefaultOidcUser) authentication.getPrincipal();
-            String userId = oidcUser.getName(); // Or any other attribute that contains the user ID
-            return "User ID: " + userId;
-        } else {
-            return "User not authenticated";
+            Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+            Map<String, Object> claims = jwt.getClaims();
+//            System.out.println("claims"+claims);
+            String username = (String) claims.get("name"); // Adjust claim key if needed
+            System.out.println("username"+ username);
+            return username;
+        } catch (Exception e) {
+            //log.error("Error retrieving user information from JWT:", e);
+//            response.put("error", "Failed to retrieve user information");
+            return "error faild to retrive User Name";
         }
     }
 
     @GetMapping("/OwnerID")
     public String Owner_ID(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof OAuth2User) {
-            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-            String ownerId = (String) oauth2User.getAttribute("Owner_ID");
-            if (ownerId != null) {
-                return "Owner ID: " + ownerId;
-            } else {
-                return "Owner ID not available";
+        try {
+            if (!(authentication instanceof JwtAuthenticationToken)) {
+                throw new SecurityException("Invalid authentication type");
             }
-        } else {
-            return "User ID not available";
+
+            Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+            Map<String, Object> claims = jwt.getClaims();
+            String ownerid = (String) claims.get("Owner_ID"); // Adjust claim key if needed
+            System.out.println("ownerid"+ ownerid);
+            return ownerid;
+        } catch (Exception e) {
+            return "error faild to retrive ownerId";
         }
+    }
+
+    @GetMapping("/getstring")
+    public String getstring()
+    {
+        return "this is example";
     }
 
 
 
 
 }
-
-//
-//
-//import com.productcnit.Service.KeyManager;
-//import com.productcnit.dto.KeyPairResponse;
-//import com.productcnit.dto.PublicKeyMessage;
-//import jakarta.servlet.http.HttpSession;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.http.HttpMethod;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.kafka.annotation.KafkaListener;
-//import org.springframework.kafka.core.KafkaTemplate;
-//import org.springframework.web.bind.annotation.GetMapping;
-//import org.springframework.web.bind.annotation.RequestMapping;
-//import org.springframework.web.bind.annotation.RestController;
-//import org.springframework.web.reactive.function.client.WebClient;
-//import reactor.core.publisher.Mono;
-//
-//@RestController
-//@RequestMapping("/key")
-//public class KeyexchangeController {
-//
-//
-//    private String privateKey2;
-//    private String publicKey2;
-//
-//
-//    private final HttpSession session;
-//    private final KafkaTemplate<String, PublicKeyMessage> kafkaTemplate;
-//
-//
-//    @Autowired
-//    private final KeyManager keyManager3;
-//
-//    public KeyexchangeController(HttpSession session, KafkaTemplate<String, PublicKeyMessage> kafkaTemplate, KeyManager keyManager) {
-//        this.session = session;
-//        this.kafkaTemplate = kafkaTemplate;
-//        this.keyManager3 = keyManager;
-//    }
-//
-//    @GetMapping("/getkeypair")
-//    public KeyPairResponse getpairkey() {
-//        KeyManager.generateKeyPair();
-//        String prvkey = keyManager3.generatePrviatekey();
-//        String pubkey = keyManager3.generatePublicKey();
-//        return new KeyPairResponse(prvkey, pubkey);
-//    }
-//
-//    @GetMapping("/getpair")
-//    public KeyPairResponse getKeyStrPrv()
-//    {
-//        try {
-//            WebClient webClient = WebClient.create("http://localhost:8088/key");
-//
-//            // Build the request
-//            WebClient.RequestHeadersSpec<?> requestSpec = webClient
-//                    .method(HttpMethod.GET)
-//                    .uri("/getkeypair");
-//
-//            // Execute the request
-//            Mono<KeyPairResponse> responseMono = requestSpec.retrieve().bodyToMono(KeyPairResponse.class);
-//
-//            // Block and get the response
-//            KeyPairResponse response = responseMono.block();
-//            if (response != null) {
-//                // Access the private key and public key
-//                privateKey2 = response.getPrivatekey();
-//                String publicKey1 = response.getPublickey();
-//                session.setAttribute("privateKeyx", privateKey2);
-//                session.setAttribute("publicKeyx", publicKey1);
-//                System.out.println("Private Key: " + privateKey2);
-//                System.out.println("Public Key: " + publicKey1);
-//                return new KeyPairResponse(privateKey2,publicKey1);
-//            } else {
-//                return null;
-//            }
-//        } catch (Exception ignored) {
-//            System.out.println("Error: " + ignored.getMessage());
-//            return null;
-//        }
-//    }
-//
-//    @GetMapping("/getpub")
-//    public ResponseEntity<String> getPublicKey() {
-//        String publicKey = (String) session.getAttribute("publicKeyx");
-//        if (publicKey != null) {
-//            PublicKeyMessage publicKeyMessage = new PublicKeyMessage("client-idx", publicKey);
-//            kafkaTemplate.send("public-key-topic", "client-idx", publicKeyMessage);
-//            return ResponseEntity.ok("Public key published successfully");
-//        } else {
-//            return ResponseEntity.badRequest().body("Public key not found in session");
-//        }
-//    }
-//
-//    @GetMapping("/testsession")
-//    public String testSession() {
-//        session.setAttribute("testAttribute", "testValue");
-//        String testValue = (String) session.getAttribute("testAttribute");
-//        return "Test value from session: " + testValue;
-//    }
-//
-//    @KafkaListener(topics = "public-key-topic", groupId = "group-id")
-//    public String getsecsharedkey(PublicKeyMessage publicKeyMessage)
-//   {
-////       String privateKey = (String) session.getAttribute("privateKeyx");
-//       System.out.println(privateKey2);
-//       if (privateKey2 == null) {
-//           return "Private key not found in session";
-//       }
-//       String PeerPubKey = publicKeyMessage.getPublicKey();
-//
-////       try
-////       {
-////           WebClient webClient = WebClient.create("http://localhost:8088/key");
-////
-////           // Build the request
-////           WebClient.RequestHeadersSpec<?> requestSpec = webClient
-////                   .method(HttpMethod.GET)
-////                   .uri("/getpub");
-////
-////           // Execute the request
-////           Mono<String> responseMono = requestSpec.retrieve().bodyToMono(String.class);
-////
-////           // Block and get the response
-////           String response = responseMono.block();
-////           PeerPubKey= response.toString();
-////           System.out.println("this is the peerpublickey" + PeerPubKey);
-////           System.out.println("this is the privatekey" + privateKey);
-////       }
-////       catch (Exception ignored)
-////       {
-////           System.out.println("error");
-////       }
-//
-//       keyManager3.initFromStringsPublickey(PeerPubKey);
-//       keyManager3.initFromStringsPrvkey(privateKey2);
-//       String sharedKey = keyManager3.generateSharedSecret();
-//       System.out.println("Shared key: " + sharedKey);
-//       return sharedKey;
-//   }
-//}

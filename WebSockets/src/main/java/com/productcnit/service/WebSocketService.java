@@ -1,7 +1,12 @@
 package com.productcnit.service;
 
+import com.productcnit.dto.GenKeyPairResponse;
 import org.apache.kafka.common.protocol.types.Field;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -23,7 +28,8 @@ public class WebSocketService {
 
     private static final String PUBLIC_KEY_STRINGS="MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCAQLQjHVXBTFYFfzlIKvuBCX6mZmAQfvGpAVSGhnXZ9g3Tha4FKsi9BTUlz2zwPtkzINLfUYIRPf71Q5hCk4Y7QAcJH3AviTnCasAwG7KBDzGYFM/ka52kiol/0vMVSle1o9d9ZTzF+9pJ+GkoF5ykFF62y7mrx9yopFSucezaCQIDAQAB";
 
-
+    @Autowired
+    private WebClient.Builder webClientBuilder;
     //function for generating public key for signature
     public PublicKey initFromStringsPublickey(String publickey)
     {
@@ -123,6 +129,34 @@ public class WebSocketService {
 
     }
 
+    public GenKeyPairResponse getkeypair(Authentication authentication, String OwnerId)
+    {
+            WebClient webClient = WebClient.create("http://KEYEX-SERVICE");
+
+            Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+            System.out.println(jwt.getTokenValue());
+            WebClient webClient1 =webClientBuilder.build();
+            GenKeyPairResponse response= webClient1.get()
+                    .uri("http://KEYEX-SERVICE/api/key/Gengetkeypair"+"/"+OwnerId)
+                    .headers(httpHeaders -> httpHeaders.setBearerAuth(jwt.getTokenValue()))
+                    .retrieve()
+                    .bodyToMono(GenKeyPairResponse.class)
+                    .block();
+
+            String privatekey= response.getGen_private_Key();
+            String publickey= response.getGen_public_Key();
+            String ownerid= response.getGen_Owner_Id();
+            String userid= response.getGen_User_Id();
+            System.out.println("privatekey"+privatekey);
+            System.out.println("publickey"+publickey);
+            System.out.println("ownerid"+ownerid);
+            System.out.println("userid"+userid);
+          ;
+//            System.err.println("The Secret Message\n"+secretMessage);
+            return response;
+
+    }
+
     public boolean getsig()
     {
         initFromStringsPublickey(PUBLIC_KEY_STRINGS);
@@ -156,7 +190,5 @@ public class WebSocketService {
         }
 
     }
-
-
 
 }

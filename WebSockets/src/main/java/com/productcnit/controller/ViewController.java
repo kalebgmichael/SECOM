@@ -1,5 +1,6 @@
 package com.productcnit.controller;
 
+import com.productcnit.dto.GenKeyPairResponse;
 import com.productcnit.service.WebSocketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -10,15 +11,12 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 
-@Controller
+@RestController
 @RequestMapping("/api/socket")
 @CrossOrigin("*")
 public class ViewController {
@@ -32,30 +30,28 @@ public class ViewController {
 
     @GetMapping("/home")
     public String home(Model model, Authentication authentication)
-    {    try {
+    {
+        try
+        {
         if (!(authentication instanceof JwtAuthenticationToken)) {
             throw new SecurityException("Invalid authentication type");
         }
-
         Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
         Map<String, Object> claims = jwt.getClaims();
-
-
-        String userId =  (String) claims.get("name");
+        System.out.println("claims"+claims);
+        String userId =  authentication.getName();
         // Extract profile and email claims
         String email = (String) claims.get("email"); // Adjust claim key if needed
-        String firstName = (String) claims.get("firstName"); // Adjust claim key if needed
-        String lastName = (String) claims.get("lastName"); // Adjust claim key if needed
-
-        // Combine for a username-like identifier (optional)
-        String username = String.format("%s %s", firstName, lastName);
+        String username = (String) claims.get("name"); // Adjust claim key if needed
         String ownerid = (String) claims.get("Owner_ID"); // Adjust claim key if needed
         System.out.println("ownerid"+ ownerid);
         System.out.println("email"+ email);
+        System.out.println("userId"+ userId);
         model.addAttribute("ownerId", ownerid);
         model.addAttribute("userId", userId);
-
-    } catch (Exception e) {
+        model.addAttribute("username", username);
+    }
+        catch (Exception e) {
         //log.error("Error retrieving user information from JWT:", e);
     }
 
@@ -71,6 +67,19 @@ public class ViewController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to fetch data");
         }
     }
+
+
+    @GetMapping("/getkeypair")
+    public ResponseEntity<GenKeyPairResponse> getkeypair(@RequestParam("Ownerid") String Ownerid,Authentication authentication) {
+        GenKeyPairResponse secretMessage = webSocketService.getkeypair(authentication,Ownerid);
+        if (secretMessage != null) {
+            return ResponseEntity.ok(secretMessage);
+        } else {
+            System.out.println("error in getkeypair");
+            return null;
+        }
+    }
+
 
 
 

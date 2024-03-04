@@ -11,7 +11,7 @@ import java.util.List;
 
 @Repository
 public class GeneralKeyPairRepository {
-    private static final String HASH_KEY = "key-pair";
+    private static final String HASH_KEY = "Gen-key-pair";
 
     private final RedisTemplate<String, GenKeyPairResponse> generalKeyPairRedisTemplate;
 

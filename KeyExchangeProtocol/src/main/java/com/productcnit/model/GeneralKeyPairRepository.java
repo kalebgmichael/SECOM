@@ -9,10 +9,11 @@ import org.springframework.data.redis.core.RedisHash;
 import java.io.Serializable;
 
 
-@RedisHash("GeneralKeyPairRepository")
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@RedisHash("GeneralKeyPairRepository")
 public class GeneralKeyPairRepository implements Serializable {
     @Id
     private String Owner_Id;

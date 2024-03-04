@@ -6,7 +6,12 @@ import com.productcnit.Service.ShoreCont_Service;
 import com.productcnit.dto.GenKeyPairResponse;
 import com.productcnit.dto.KeyPairResponse;
 import com.productcnit.dto.SenRecResponse;
+import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -20,7 +25,9 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.Principal;
@@ -33,7 +40,12 @@ import java.util.Map;
 @CrossOrigin("*")
 public class ShoreCont_Controller {
 
-    private final WebClient webClient = WebClient.builder().build();
+//    private final WebClient webClient = WebClient.builder().build();
+
+    @Autowired
+    private WebClient.Builder webClientBuilder;
+
+    private final RestTemplate restTemplate = new RestTemplateBuilder().build();
 
     private final KafkaTemplate<String, SenRecResponse> kafkaloginTemplate;
 
@@ -60,48 +72,35 @@ public class ShoreCont_Controller {
         return ResponseEntity.ok(response);
     }
     @GetMapping("/login")
-    public ResponseEntity<String> login(Principal principal) {
+    public ResponseEntity<String> login(Authentication authentication) {
+        String userId = "";
+        String ownerid = "";
 
-        String userInfo = getUserId(principal);
-        String userId = userName(SecurityContextHolder.getContext().getAuthentication());
-        String ownerID=Owner_ID(SecurityContextHolder.getContext().getAuthentication());
+        try {
+            if (!(authentication instanceof JwtAuthenticationToken)) {
+                throw new SecurityException("Invalid authentication type");
+            }
 
-        System.out.println("this is userinfo "+principal.getName());
-        System.out.println("this is OwnerID "+ownerID);
+            Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+            Map<String, Object> claims = jwt.getClaims();
 
-
-        SenRecResponse senRecResponse= new SenRecResponse(ownerID,userId);
+            // Extract profile and email claims
+            String email = (String) claims.get("email"); // Adjust claim key if needed
+            String firstName = (String) claims.get("firstName"); // Adjust claim key if needed
+            String lastName = (String) claims.get("lastName"); // Adjust claim key if needed
+            userId =authentication.getName();
+            ownerid = (String) claims.get("Owner_ID"); // Adjust claim key if needed
+            System.out.println("ownerid"+ ownerid);
+            System.out.println("userId"+ userId);
+        } catch (Exception e) {
+            //log.error("Error retrieving user information from JWT:", e);
+        }
+        SenRecResponse senRecResponse= new SenRecResponse(ownerid,userId);
         kafkaloginTemplate.send("Save-Gen-keypair-topic", "Gen-key-pair", senRecResponse);
             return ResponseEntity.ok("OwnerId sent  successfully");
     }
 
-    @GetMapping("/userName")
-    @KafkaListener(topics = "Username-topic", groupId = "group-id3")
-    public String userName(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof OAuth2User) {
-            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-            String userId = oauth2User.getAttribute("preferred_username");
-            if (userId != null) {
-                return "User ID: " + userId;
-            } else {
-                return "User ID not available";
-            }
-        } else {
-            return "User ID not available";
-        }
-    }
-    @GetMapping("/userId")
-    private String getUserId(Principal authentication) {
 
-       System.out.println(authentication);
-        return "not null";
-    }
-//    @GetMapping("/userId1")
-//    private String getUserId1(Authentication authentication) {
-//
-//        System.out.println(authentication);
-//        return "not null";
-//    }
 
     @GetMapping("/userId2")
     private String  getUserId2(Authentication authentication) {
@@ -137,56 +136,13 @@ public class ShoreCont_Controller {
         }
     }
 
-//    public String getuserId() {
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        if (authentication != null && authentication.getPrincipal() instanceof DefaultOidcUser) {
-//            DefaultOidcUser oidcUser = (DefaultOidcUser) authentication.getPrincipal();
-//            String userId = oidcUser.getName(); // Or any other attribute that contains the user ID
-//            return "User ID: " + userId;
-//        } else {
-//            return "User not authenticated";
-//        }
-//    }
-
-    @GetMapping("/OwnerID")
-    @KafkaListener(topics = "OwnerID-topic", groupId = "group-id3")
-    public String Owner_ID(Authentication authentication) {
-        if (authentication != null && authentication.getPrincipal() instanceof OAuth2User) {
-            OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
-            String ownerId = (String) oauth2User.getAttribute("Owner_ID");
-            if (ownerId != null) {
-                return "Owner ID: " + ownerId;
-
-            } else {
-                return "Owner ID not available";
-            }
-        } else {
-            return "User ID not available";
-        }
-    }
-
-
-
-    //    @GetMapping("/sendpub")
-//    public String Sendpub()
-//    {
-//        Jwt jwt =(Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-//
-//        String response= webClient.get()
-//                .uri("http://localhost:8089/key/sendpub")
-//                .headers(httpHeaders -> httpHeaders.setBearerAuth(jwt.getTokenValue()))
-//                .retrieve()
-//                .bodyToMono(String.class)
-//                .block();
-//        return "This is message form keyexhcnage  "+ response;
-//    }
     @GetMapping("/sendpub1")
     public String Sendpub1() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof DefaultOidcUser) {
             DefaultOidcUser oidcUser = (DefaultOidcUser) authentication.getPrincipal();
             String tokenValue = oidcUser.getIdToken().getTokenValue();
-
+            WebClient webClient =webClientBuilder.build();
             String response = webClient.get()
                     .uri("http://KEYEX-SERVICE/api/key/sendpub")
                     .headers(httpHeaders -> httpHeaders.setBearerAuth(tokenValue))
@@ -199,124 +155,59 @@ public class ShoreCont_Controller {
         }
     }
 
-    @GetMapping("/sendpub2")
-    public String Sendpub2(Principal principal) {
-        String userInfo = getUserId(principal);
-        String userId = userName(SecurityContextHolder.getContext().getAuthentication());
-        String ownerID=Owner_ID(SecurityContextHolder.getContext().getAuthentication());
+    @GetMapping("/getkeypair/{OwnerId}")
+    public GenKeyPairResponse getkeypair(String OwnerId)
+    {
+        try
+        {
+            WebClient webClient = WebClient.create("http://KEYEX-SERVICE");
 
-        System.out.println("this is userinfo "+userInfo);
-        System.out.println("this is userid "+userId);
-        System.out.println("this is OwnerID "+ownerID);
+            // Build the request
+            WebClient.RequestHeadersSpec<?> requestSpec = webClient
+                    .method(HttpMethod.GET)
+                    .uri("/api/key/Gengetkeypair"+"/"+OwnerId);
 
-        if (!"User not authenticated".equals(userInfo) && !"User not available".equals(userId)) {
-            // User is authenticated, proceed with sending the public key
-            DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            String tokenValue = oidcUser.getIdToken().getTokenValue();
+            // Execute the request
+            Mono<GenKeyPairResponse> responseMono = requestSpec.retrieve().bodyToMono(GenKeyPairResponse.class);
 
-            String response = webClient.get()
-                    .uri("http://KEYEX-SERVICE/api/key/sendpub")
-                    .headers(httpHeaders -> httpHeaders.setBearerAuth(tokenValue))
+            // Block and get the response
+            GenKeyPairResponse response = responseMono.block();
+
+            String privatekey= response.getGen_private_Key();
+            String publickey= response.getGen_public_Key();
+            String ownerid= response.getGen_Owner_Id();
+            String userid= response.getGen_User_Id();
+            System.out.println("privatekey"+privatekey);
+            System.out.println("publickey"+publickey);
+            System.out.println("ownerid"+ownerid);
+            System.out.println("userid"+userid);
+            ;
+//            System.err.println("The Secret Message\n"+secretMessage);
+            return response;
+        }
+        catch (Exception ignored)
+        {
+            return null;
+        }
+
+    }
+
+    @GetMapping("/getstring")
+    public String getstring(Authentication authentication)
+    {
+            Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+            System.out.println(jwt.getTokenValue());
+        WebClient webClient =webClientBuilder.build();
+          String response= webClient.get()
+                    .uri("http://KEYEX-SERVICE/api/key/OwnerID")
+                    .headers(httpHeaders -> httpHeaders.setBearerAuth(jwt.getTokenValue()))
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
-            return "This is message from keyexchange " + response;
-        } else {
-            // User not authenticated or user ID not available
-            return "User not authenticated or user ID not available";
-        }
+
+            return response;
+
     }
-
-    @GetMapping("/callGengetkeypair/{Id}")
-    public ResponseEntity<GenKeyPairResponse> callGenGetKeyPairById(@PathVariable String Id,Principal principal) {
-        // Use WebClient to send a GET request to the endpoint /Gengetkeypair/{Id}
-        String userInfo = getUserId(principal);
-        String userId = userName(SecurityContextHolder.getContext().getAuthentication());
-        String ownerID=Owner_ID(SecurityContextHolder.getContext().getAuthentication());
-
-        if (!"User not authenticated".equals(userInfo) && !"User not available".equals(userId)) {
-
-            DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            String tokenValue = oidcUser.getIdToken().getTokenValue();
-
-            ResponseEntity<GenKeyPairResponse> responseEntity = webClient.get()
-                    .uri("http://KEYEX-SERVICE/api/key/Gengetkeypair/{Id}", Id)
-                    .headers(httpHeaders -> httpHeaders.setBearerAuth(tokenValue))
-                    .retrieve()
-                    .toEntity(GenKeyPairResponse.class)
-                    .block();
-            return responseEntity;
-
-        }
-        else
-        {
-            System.out.println("User not authenticated or user ID not available");
-            return null;
-
-        }
-    }
-
-    @GetMapping("/callGenDelkeypair/{Id}")
-    public ResponseEntity<String> callGenDeleterKeyPairById(@PathVariable String Id,Principal principal) {
-        // Use WebClient to send a GET request to the endpoint /GenDelkeypair/{Id}
-        String userInfo = getUserId(principal);
-        String userId = userName(SecurityContextHolder.getContext().getAuthentication());
-        String ownerID=Owner_ID(SecurityContextHolder.getContext().getAuthentication());
-
-        if (!"User not authenticated".equals(userInfo) && !"User not available".equals(userId)) {
-
-            DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            String tokenValue = oidcUser.getIdToken().getTokenValue();
-
-            ResponseEntity<String> responseEntity = webClient.get()
-                    .uri("http://KEYEX-SERVICE/api/key/GenDelkeypair/{Id}", Id)
-                    .headers(httpHeaders -> httpHeaders.setBearerAuth(tokenValue))
-                    .retrieve()
-                    .toEntity(String.class)
-                    .block();
-            return responseEntity;
-
-        }
-        else
-        {
-            System.out.println("User not authenticated or user ID not available");
-            return null;
-
-        }
-    }
-    @GetMapping("/callGenfindall")
-    public ResponseEntity<List<GenKeyPairResponse>> callGenFindAll(Principal principal) {
-        // Use WebClient to send a GET request to the endpoint /Genfindall
-        String userInfo = getUserId(principal);
-        String userId = userName(SecurityContextHolder.getContext().getAuthentication());
-        String ownerID=Owner_ID(SecurityContextHolder.getContext().getAuthentication());
-
-        if (!"User not authenticated".equals(userInfo) && !"User not available".equals(userId)) {
-
-            DefaultOidcUser oidcUser = (DefaultOidcUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            String tokenValue = oidcUser.getIdToken().getTokenValue();
-            ResponseEntity<List<GenKeyPairResponse>> responseEntity = webClient.get()
-                    .uri("http://KEYEX-SERVICE/api/key/Genfindall")
-                    .headers(httpHeaders -> httpHeaders.setBearerAuth(tokenValue))
-                    .retrieve()
-                    .toEntityList(GenKeyPairResponse.class)
-                    .block();
-            return responseEntity;
-
-        }
-        else
-        {
-            System.out.println("User not authenticated or user ID not available");
-            return null;
-
-        }
-    }
-
-
-
-
-
-
 
 
 }

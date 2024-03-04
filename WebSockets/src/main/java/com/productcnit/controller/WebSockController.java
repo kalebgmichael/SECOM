@@ -1,9 +1,6 @@
 package com.productcnit.controller;
 
-import com.productcnit.dto.ChatMessage;
-import com.productcnit.dto.Greeting;
-import com.productcnit.dto.HelloMessage;
-import com.productcnit.dto.MessageToSend;
+import com.productcnit.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -47,24 +44,24 @@ public class WebSockController {
         return outMessage;
     }
 
+    @MessageMapping("/api/socket/public-key")
+    @SendTo("/topic/public-key")
+    @CrossOrigin("*")
+    public PublicKeyMessage send_publickey(PublicKeyMessage publicKeyMessage) throws Exception {
+        PublicKeyMessage outMessage = new PublicKeyMessage();
+        outMessage.setPublicKey(publicKeyMessage.getPublicKey());
+        outMessage.setSenderId(publicKeyMessage.getSenderId());
+        outMessage.setRecId(publicKeyMessage.getRecId());
+        outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
+        return outMessage;
+    }
+
     @MessageMapping("/api/socket/private-chat")
     @CrossOrigin("*")
     public void send_private(@Payload ChatMessage message) throws Exception {
         System.out.println(message);
         simpMessagingTemplate.convertAndSendToUser(message.getRec(),"/specific/private-chat",message);
     }
-//    @MessageMapping("/api/socket/private-chat")
-//    @SendToUser("/specific/private-chat")
-//    @CrossOrigin("*")
-//    public MessageToSend send_private(ChatMessage message, final Principal principal) throws Exception {
-//        MessageToSend outMessage = new MessageToSend();
-//        outMessage.setTo(message.getTo());
-//        outMessage.setSender(message.getSender());
-//        outMessage.setText(message.getText());
-//        outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
-//        return outMessage;
-//    }
-
 
 
 }
