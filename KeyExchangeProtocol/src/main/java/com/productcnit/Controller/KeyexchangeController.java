@@ -26,6 +26,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -140,23 +142,18 @@ public class KeyexchangeController {
         GenKeyPairResponse keys= generalKeyPairRepository.findKeypairbyId(Owner_ID);
         if(keys != null)
         {
-            KeyManager.generateKeyPair();
-            String privateKey = keyManager.generatePrviatekey();
-            String publicKey = keyManager.generatePublicKey();
-//            session.setAttribute("privateKeyx", privateKey);
-//            session.setAttribute("publicKeyx", publicKey);
-            System.out.println("Private Key: " + privateKey);
-            System.out.println("Public Key: " + publicKey);
-            keyPairResponse= new KeyPairResponse(publicKey,privateKey);
-
-            keyManager.initFromStringsPublickey(publicKey);
-            keyManager.initFromStringsPrvkey(privateKey);
-            String sharedKey = keyManager.generateSharedSecret();
-            System.out.println("the shared key is "+sharedKey);
-            // Save the generated key pair to the repository
-            GenKeyPairResponse genKeyPairResponse= new GenKeyPairResponse(Owner_ID,userId,privateKey,publicKey);
-            System.out.println("private" +genKeyPairResponse.getGen_private_Key());
-            System.out.println("public" +genKeyPairResponse.getGen_public_Key());
+//            KeyManager.generateKeyPair();
+//            String privateKey = keyManager.generatePrviatekey();
+//            String publicKey = keyManager.generatePublicKey();
+//            keyPairResponse= new KeyPairResponse(publicKey,privateKey);
+//            keyManager.initFromStringsPublickey(publicKey);
+//            keyManager.initFromStringsPrvkey(privateKey);
+//            String sharedKey = keyManager.generateSharedSecret();
+//            System.out.println("the shared key is "+sharedKey);
+//            // Save the generated key pair to the repository
+//            GenKeyPairResponse genKeyPairResponse= new GenKeyPairResponse(Owner_ID,userId,privateKey,publicKey);
+//            System.out.println("private" +genKeyPairResponse.getGen_private_Key());
+//            System.out.println("public" +genKeyPairResponse.getGen_public_Key());
 
           System.out.println("Data already exists in cache");
           return null;
@@ -166,12 +163,9 @@ public class KeyexchangeController {
             KeyManager.generateKeyPair();
             String privateKey = keyManager.generatePrviatekey();
             String publicKey = keyManager.generatePublicKey();
-//            session.setAttribute("privateKeyx", privateKey);
-//            session.setAttribute("publicKeyx", publicKey);
             System.out.println("Private Key: " + privateKey);
             System.out.println("Public Key: " + publicKey);
             keyPairResponse= new KeyPairResponse(publicKey,privateKey);
-
             keyManager.initFromStringsPublickey(publicKey);
             keyManager.initFromStringsPrvkey(privateKey);
             String sharedKey = keyManager.generateSharedSecret();
@@ -225,23 +219,47 @@ public class KeyexchangeController {
     }
 
 
-    @GetMapping("/sharedkey")
-    @KafkaListener(topics = "key-pair-topic", groupId = "group-id2")
-    public String getsecsharedkey(@RequestParam("Ownerid") String Ownerid) {
-//        System.out.println("private"+privateKey);
-//        System.out.println("public"+publicKey);
-//        String peerPublicKey = publicKeyMessage.getPublicKey();
-        GenKeyPairResponse keys = generalKeyPairRepository.findKeypairbyId(Ownerid);
-        System.out.println("publickey"+keys.getGen_public_Key().toString());
-        System.out.println("privatekey"+keys.getGen_private_Key().toString());
+//    @GetMapping("/sharedkey")
+//    @KafkaListener(topics = "key-pair-topic", groupId = "group-id2")
+//    public String getsecsharedkey(@RequestParam("Ownerid") String Ownerid,@RequestParam("Recid") String Recid, @RequestParam("publicKey") String publicKey) {
+//        System.out.println("publickey"+publicKey);
+//        // Decode the public key
+//        String decodedPublicKey = URLDecoder.decode(publicKey, StandardCharsets.UTF_8);
+//
+//        // Print the decoded public key
+//        System.out.println("Decoded public key: " + decodedPublicKey);
+//        GenKeyPairResponse keys = generalKeyPairRepository.findKeypairbyId("00001");
+//        GenKeyPairResponse keys1 = generalKeyPairRepository.findKeypairbyId("00002");
+//        System.out.println("publickey1"+keys.getGen_public_Key().toString());
+//        System.out.println("privatekey1"+keys.getGen_private_Key().toString());
+////        System.out.println("privatekey2"+keys1.getGen_private_Key().toString());
+////        KeyManager.generateKeyPair();
+//        keyManager.initFromStringsPublickey(decodedPublicKey);
+//        keyManager.initFromStringsPrvkey(keys1.getGen_private_Key());
+//        String sharedKey = keyManager.generateSharedSecret();
+//        System.out.println("the shared key is "+sharedKey);
+//        return "sharedKey";
+//    }
+@GetMapping("/sharedkey")
+@KafkaListener(topics = "key-pair-topic", groupId = "group-id2")
+public String getsecsharedkey(@RequestParam("Ownerid") String Ownerid,@RequestParam("Recid") String Recid, @RequestParam("publicKey") String publicKey) {
+//    System.out.println("publickey"+publicKey);
+    // Decode the public key
+    String decodedPublicKey = URLDecoder.decode(publicKey, StandardCharsets.UTF_8);
+    // Print the decoded public key
+    System.out.println("Decoded public key: " + decodedPublicKey);
+    GenKeyPairResponse keys = generalKeyPairRepository.findKeypairbyId(Recid);
+//    System.out.println("publickey1"+keys.getGen_public_Key().toString());
+    System.out.println("privatekey1"+keys.getGen_private_Key().toString());
+//        System.out.println("privatekey2"+keys1.getGen_private_Key().toString());
 //        KeyManager.generateKeyPair();
-        keyManager.initFromStringsPublickey(keys.getGen_public_Key().toString());
-        keyManager.initFromStringsPrvkey(keys.getGen_private_Key().toString());
-        String sharedKey = keyManager.generateSharedSecret();
-        System.out.println("the shared key is "+sharedKey);
-        return "sharedKey";
-    }
-    // key-pair CRUD handling
+    keyManager.initFromStringsPublickey(decodedPublicKey);
+    keyManager.initFromStringsPrvkey(keys.getGen_private_Key());
+    String sharedKey = keyManager.generateSharedSecret();
+    System.out.println("the shared key is "+sharedKey);
+    return sharedKey;
+}
+
 
     // key-pair CRUD handling
 
@@ -328,57 +346,6 @@ public class KeyexchangeController {
             return null;
         }
     }
-
-
-//   @PostMapping("/savekeypair")
-//    public KeyPair save(@RequestBody KeyPair keyPair)
-//   {
-//       return keyPairRespository.save(keyPair);
-//   }
-//   @GetMapping("/getkeypair/{Id}")
-//    public KeyPair findkeypair(@PathVariable String Id)
-//   {
-//       KeyPair keys= keyPairRespository.findKeypairbyId(Id);
-//
-//       System.out.println("this is private "+keys.getPrivateKey()+"this is public "+keys.getPublicKey());
-//       return keys;
-//   }
-//   @GetMapping("/findall")
-//    public List<Object> findall()
-//   {
-//       return keyPairRespository.findall();
-//   }
-//
-//
-//    // Gen key-pair CRUD handling
-//
-//    @PostMapping("/GenSave_keypair")
-//    public GenKeyPairResponse SaveGen(@RequestBody GenKeyPairResponse genKeyPairResponse)
-//    {
-//        return generalKeyPairRepository.save(genKeyPairResponse);
-//    }
-//    @GetMapping("/Gengetkeypair/{Id}")
-//    public GenKeyPairResponse findGenkeypair(@PathVariable String Id)
-//    {
-//        GenKeyPairResponse keys= generalKeyPairRepository.findKeypairbyId(Id);
-//
-//        System.out.println("this is private "+keys.getGen_private_Key()+"this is public "+keys.getGen_public_Key());
-//        return keys;
-//    }
-//    @GetMapping("/GenDelkeypair/{Id}")
-//    public String DeleteGenkeypair(@PathVariable String Id)
-//    {
-//        String keys= generalKeyPairRepository.deletekeypair(Id);
-//
-//        return "keys deleted sucessfully";
-//    }
-//    @GetMapping("/Genfindall")
-//    public List<Object> findGenall()
-//    {
-//        return generalKeyPairRepository.findall();
-//    }
-
-
     // User Info
 
     @GetMapping("/userId")

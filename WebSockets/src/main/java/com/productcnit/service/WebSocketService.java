@@ -1,28 +1,40 @@
 package com.productcnit.service;
 
 import com.productcnit.dto.GenKeyPairResponse;
+import com.productcnit.dto.PublicKeyMessage;
+import com.productcnit.dto.PublicKeyMessageSend;
 import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import javax.crypto.Cipher;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.text.SimpleDateFormat;
 import java.util.Base64;
+import java.util.Date;
+import java.util.Map;
 
 
 @Service
 public class WebSocketService {
+
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
     private PrivateKey privateKey;
     private PublicKey publicKey;
 
@@ -156,6 +168,56 @@ public class WebSocketService {
             return response;
 
     }
+    public String Sharedkey(String Recid, String publicKey, Authentication authentication) {
+        WebClient webClient = WebClient.create("http://KEYEX-SERVICE");
+        System.out.println("publickey"+publicKey);
+//        System.out.println("OwnerId"+OwnerId);
+//        System.out.println("Recid"+Recid);
+        Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+//        System.out.println(jwt.getTokenValue());
+
+        Map<String, Object> claims = jwt.getClaims();
+        String OwnerId = (String) claims.get("Owner_ID");
+        System.out.println("OwnerId"+OwnerId);
+        String  userId =authentication.getName();
+
+        WebClient webClient1 = webClientBuilder.build();
+        String response = webClient1.get()
+                .uri(builder -> {
+                    UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance()
+                            .scheme("http")
+                            .host("KEYEX-SERVICE")
+                            .path("/api/key/sharedkey")
+                            .queryParam("Ownerid", URLEncoder.encode(OwnerId, StandardCharsets.UTF_8))
+                            .queryParam("Recid", URLEncoder.encode(Recid, StandardCharsets.UTF_8))
+                            .queryParam("publicKey", URLEncoder.encode(publicKey, StandardCharsets.UTF_8));
+                    return uriBuilder.build().toUri();
+                })
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(jwt.getTokenValue()))
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+        return response;
+    }
+
+
+//    public String Sharedkey(String OwnerId,String Recid, String publickey,Authentication authentication)
+//    {
+//        WebClient webClient = WebClient.create("http://KEYEX-SERVICE");
+//
+//        Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+//        System.out.println(jwt.getTokenValue());
+//        WebClient webClient1 =webClientBuilder.build();
+//        String response= webClient1.get()
+//                .uri("http://KEYEX-SERVICE/api/key/sharedkey?Ownerid={OwnerId}&Recid={Recid}&publicKey={publicKey}")
+//                .headers(httpHeaders -> httpHeaders.setBearerAuth(jwt.getTokenValue()))
+//                .retrieve()
+//                .bodyToMono(String.class)
+//                .block();
+//        return response;
+//
+//    }
+
 
     public boolean getsig()
     {
@@ -190,5 +252,20 @@ public class WebSocketService {
         }
 
     }
+
+    public PublicKeyMessage SendPublicKey(PublicKeyMessageSend publicKeyMessage)
+
+    {
+        PublicKeyMessage outMessage= new PublicKeyMessage();
+        outMessage.setPublicKey(publicKeyMessage.getPublicKey());
+        outMessage.setSenderId(publicKeyMessage.getSenderId());
+        outMessage.setRecId(publicKeyMessage.getRecId());
+        outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
+
+        messagingTemplate.convertAndSend("/topic/public-key",outMessage);
+
+        return outMessage;
+    }
+
 
 }

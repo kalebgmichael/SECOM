@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 
-@RestController
+@Controller
 @RequestMapping("/api/socket")
 @CrossOrigin("*")
 public class ViewController {
@@ -57,30 +57,6 @@ public class ViewController {
 
         return "example";
     }
-
-    @GetMapping("/data")
-    public ResponseEntity<String> getData(@RequestParam("privatekey") String privateKey) {
-        String secretMessage = webSocketService.getData(privateKey);
-        if (secretMessage != null) {
-            return ResponseEntity.ok(secretMessage);
-        } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to fetch data");
-        }
-    }
-
-
-    @GetMapping("/getkeypair")
-    public ResponseEntity<GenKeyPairResponse> getkeypair(@RequestParam("Ownerid") String Ownerid,Authentication authentication) {
-        GenKeyPairResponse secretMessage = webSocketService.getkeypair(authentication,Ownerid);
-        if (secretMessage != null) {
-            return ResponseEntity.ok(secretMessage);
-        } else {
-            System.out.println("error in getkeypair");
-            return null;
-        }
-    }
-
-
 
 
 }

@@ -56,25 +56,74 @@
 
 
 
-        // Make AJAX request to server endpoint with private key
-        fetch('/api/socket/data?privatekey=' + encodeURIComponent(privateKey))
+            // Make AJAX request to server endpoint with private key
+            fetch('/api/socket/data?privatekey=' + encodeURIComponent(privateKey))
 
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to fetch data');
-                }
-                return response.text();
-            })
-            .then(secretMessage => {
-                showMessage('Secret message: ' + secretMessage);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch data');
+                    }
+                    return response.text();
+                })
+                .then(secretMessage => {
+                    showMessage('Secret message: ' + secretMessage);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });
+
+          // Subscribe to the topic to receive messages
+        stompClient.subscribe('/topic/public-key', function (message) {
+
+            console.log("message from topic "+message)
+            showMessage('Message received: ' + message.body);
+            // Extract private key from the received message
+
+             // Parse the JSON message body
+             const messageBody = JSON.parse(message.body);
+
+
+         // Extract values from the message body
+            const publicKey = messageBody.publicKey;
+            console.log("publickey"+publicKey);
+            const senderId = messageBody.senderId;
+            const recId = messageBody.recId;
+            const time = messageBody.time;
+
+            // Print the extracted values
+<!--            console.log("Public Key1: " + encodeURIComponent(publicKey));-->
+              console.log("senderId"+senderId);
+              console.log("recId"+recId);
+
+            // Make AJAX request to server endpoint with private key
+            // Construct the URL with query parameters using backticks (`) and ${} syntax for interpolation
+            
+            const url = `/api/socket/getsharedkey?Recid=${encodeURIComponent(recId)}&publicKey=${encodeURIComponent(publicKey)}`;
+            const ownerId = document.getElementById('ownerId').innerText;
+            if(ownerId===recId)
+            {
+                 // Make AJAX request to server endpoint with private key
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch data');
+                    }
+                    return response.text();
+                })
+                .then(secretMessage => {
+                    showMessage('Secret message: ' + secretMessage);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+           
         });
 
 
          var user1= "00002";
+         var user2= "0001";
    stompClient.subscribe('/user1/specific/private-chat', function (message) {
             console.log("Subscribed to: " + message.headers.destination);
             console.log("User: " + message.headers.user); // Assuming 'user' is a header sent by the server
@@ -83,6 +132,24 @@
             // Extract private key from the received message
             const privateKey = JSON.parse(message.body).text;
             });
+
+   stompClient.subscribe('/user2/specific/private-chat', function (message) {
+            console.log("Subscribed to: " + message.headers.destination);
+            console.log("User: " + message.headers.user); // Assuming 'user' is a header sent by the server
+            console.log("Message from topic: " + message);
+            showMessage_private('Message received: ' + message.body);
+            // Extract private key from the received message
+            const privateKey = JSON.parse(message.body).text;
+            });
+
+<!--     stompClient.subscribe('/topic/public-key', function (message) {-->
+<!--            console.log("Subscribed to: " + message.headers.destination);-->
+<!--            console.log("User: " + message.headers.user); // Assuming 'user' is a header sent by the server-->
+<!--            console.log("Message from topic: " + message);-->
+<!--            showMessage_private('Message received: ' + message.body);-->
+<!--            // Extract private key from the received message-->
+<!--            const privateKey = JSON.parse(message.body).text;-->
+<!--            });-->
 
 
 
@@ -96,17 +163,38 @@
          console.log("this is message"+message);
          console.log("this is message"+message);
 
-<!--    stompClient.send('/chat-app/api/socket/chat', {}, JSON.stringify(message));-->
-<!--        // Get the username from a hidden input field injected by the server-side code-->
-<!--        const ownerId = document.getElementById('ownerId').innerText;-->
-<!--        // Now you can use the username in your JavaScript code-->
-<!--        console.log("Logged in ownerId:", ownerId);-->
+                 // Send a message
+    var message1 = {
+        sender: 'kaleb',
+        rec: '00001',
+        text: 'MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAIBAtCMdVcFMVgV/OUgq+4EJfqZmYBB+8akBVIaGddn2DdOFrgUqyL0FNSXPbPA+2TMg0t9RghE9/vVDmEKThjtABwkfcC+JOcJqwDAbsoEPMZgUz+RrnaSKiX/S8xVKV7Wj131lPMX72kn4aSgXnKQUXrbLuavH3KikVK5x7NoJAgMBAAECgYA2uWUjxpSc0jGyTsLmZFDEkoSUBALhhwkekA69CAqpYjAsHVJPqh3Vaa9v3r4hFPAgvNS9rU3OhaGQjbMeVUxkx9GVt2LUnGMX/M5yFh7OZl7cMtebhoeEt0z5SXI3NULiEKKjHgXwTc4DaA+lcp/gxSNDQNlSFJWhfvTUQDqosQJBAJ8nPN0eOesTaCCzATO3FpkcuhQ9XLhAQTvbzYb67gtK+4Vh8pBAEFLEuKZAmBidub63Lv50cLnm/1L7+4Y6+H8CQQDOS871vu+n914il1GBZ81IqbwKki3IWx/d6iXz1UlXyOEMgniNpQYKW8EWzvrT/lXDlTe3VKgpBfllpgIBySl3AkBzmfmglxr0wDTrQ3qFCOEWOAKFPwkBIFMB2qdP+yY696z4dmvNEWuJ4zBIOjT/9Fj9yWsOEp/quHoO2c8Z8e2bAkB05i5bwRuq8ZjNPzP3gWupXk1pLBZ3b3OqW7Gv70/FR9aHMTPBCB9ZJU9Qbm9iS8AruVW+NGGqBXGisSR4AJbXAkAjPxbNZsSfeJZY/AkU2SNbIvHnLACQvRwJwibvzAkDfJ4t1gVohi+enBO91slbMT+tQGD9qnLxDJpso4B3rmSG'
+         };
+         console.log("this is message"+message1);
+         console.log("this is message"+message1);
 
-    stompClient.send('/chat-app/api/socket/private-chat', {}, JSON.stringify(message));
+    var message3 = {
+        senderId: 'kaleb',
+        publicKey: 'MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAIBAtCMdVcFMVgV/OUgq+4EJfqZmYBB+8akBVIaGddn2DdOFrgUqyL0FNSXPbPA+2TMg0t9RghE9/vVDmEKThjtABwkfcC+JOcJqwDAbsoEPMZgUz+RrnaSKiX/S8xVKV7Wj131lPMX72kn4aSgXnKQUXrbLuavH3KikVK5x7NoJAgMBAAECgYA2uWUjxpSc0jGyTsLmZFDEkoSUBALhhwkekA69CAqpYjAsHVJPqh3Vaa9v3r4hFPAgvNS9rU3OhaGQjbMeVUxkx9GVt2LUnGMX/M5yFh7OZl7cMtebhoeEt0z5SXI3NULiEKKjHgXwTc4DaA+lcp/gxSNDQNlSFJWhfvTUQDqosQJBAJ8nPN0eOesTaCCzATO3FpkcuhQ9XLhAQTvbzYb67gtK+4Vh8pBAEFLEuKZAmBidub63Lv50cLnm/1L7+4Y6+H8CQQDOS871vu+n914il1GBZ81IqbwKki3IWx/d6iXz1UlXyOEMgniNpQYKW8EWzvrT/lXDlTe3VKgpBfllpgIBySl3AkBzmfmglxr0wDTrQ3qFCOEWOAKFPwkBIFMB2qdP+yY696z4dmvNEWuJ4zBIOjT/9Fj9yWsOEp/quHoO2c8Z8e2bAkB05i5bwRuq8ZjNPzP3gWupXk1pLBZ3b3OqW7Gv70/FR9aHMTPBCB9ZJU9Qbm9iS8AruVW+NGGqBXGisSR4AJbXAkAjPxbNZsSfeJZY/AkU2SNbIvHnLACQvRwJwibvzAkDfJ4t1gVohi+enBO91slbMT+tQGD9qnLxDJpso4B3rmSG',
+        recId: '00001'
+         };
+
+    stompClient.send('/chat-app/api/socket/chat', {}, JSON.stringify(message));
         // Get the username from a hidden input field injected by the server-side code
-        const ownerId1 = document.getElementById('ownerId').innerText;
+        const ownerId = document.getElementById('ownerId').innerText;
         // Now you can use the username in your JavaScript code
-        console.log("Logged in ownerId_private:", ownerId1);
+        console.log("Logged in ownerId:", ownerId);
+
+<!--    stompClient.send('/chat-app/api/socket/private-chat', {}, JSON.stringify(message1));-->
+<!--        // Get the username from a hidden input field injected by the server-side code-->
+<!--        const ownerId1 = document.getElementById('ownerId').innerText;-->
+<!--        // Now you can use the username in your JavaScript code-->
+<!--        console.log("Logged in ownerId_private:", ownerId1);-->
+
+<!--    stompClient.send('/chat-app/api/socket/public-key', {}, JSON.stringify(message3));-->
+<!--        // Get the username from a hidden input field injected by the server-side code-->
+<!--        const ownerId2 = document.getElementById('ownerId').innerText;-->
+<!--        // Now you can use the username in your JavaScript code-->
+<!--        console.log("Logged in ownerId:", ownerId1);-->
     });
 
     
@@ -114,269 +202,3 @@
 </script>
 </body>
 </html>
-
-
-<!--<!DOCTYPE html>-->
-<!--<html lang="en">-->
-<!--<head>-->
-<!--    <meta charset="UTF-8">-->
-<!--    <meta http-equiv="X-UA-Compatible" content="IE=edge">-->
-<!--    <meta name="viewport" content="width=device-width, initial-scale=1.0">-->
-
-<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.js"></script>-->
-<!--    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@5.0.0/bundles/stomp.umd.js"></script>-->
-<!--    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>-->
-
-<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js" integrity="sha512-1QvjE7BtotQjkq8PxLeF6P46gEpBRXuskzIVgjFpekzFVF4yjRgrQvTG1MTOJ3yQgvTteKAcO7DSZI92+u/yZw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>-->
-
-<!--    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js" integrity="sha512-iKDtgDyTHjAitUDdLljGhenhPwrbBfqTKWO1mkhSFH3A7blITC9MhYon6SjnMhp4o0rADGw9yAC6EW4t5a4K3g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>-->
-
-<!--    <script type="text/javascript">-->
-<!--        let stompClient = null;-->
-
-<!--   function connect() {-->
-<!--       const socket = new SockJS('/chat-websocket');-->
-<!--       stompClient = Stomp.over(socket);-->
-<!--       stompClient.connect({}, function(frame) {-->
-<!--           stompClient.subscribe('/topic/chat', function(newMessageReceived) {-->
-<!--               addMessageReceived(JSON.parse(newMessageReceived.body));-->
-<!--           });-->
-<!--           setConnected(true);-->
-<!--       });-->
-<!--   }-->
-
-<!--   function disconnect() {-->
-<!--       setConnected(false);-->
-<!--       if (stompClient !== null) {-->
-<!--           stompClient.disconnect();-->
-<!--       }-->
-<!--   }-->
-
-<!--           function setConnected(connected) {-->
-
-<!--               if (connected) {-->
-
-<!--                   document.getElementById('button-connect').style.display = 'none';-->
-<!--                   document.getElementById('button-disconnect').style.display = 'block';-->
-
-<!--                   document.getElementById('chat-container').style.display = 'flex';-->
-
-<!--                   document.getElementById('sender').disabled = true;-->
-
-<!--               } else {-->
-
-<!--                   document.getElementById('button-connect').style.display = 'block';-->
-<!--                   document.getElementById('button-disconnect').style.display = 'none';-->
-
-<!--                   document.getElementById('chat-container').style.display = 'none';-->
-
-<!--                   document.getElementById('sender').disabled = false;-->
-
-<!--                   document.getElementById('sender').value = '';-->
-<!--               }-->
-
-<!--               document.getElementById('messages-container').innerHTML = '';-->
-<!--           }-->
-
-<!--           function addMessageReceived(newMessageReceived) {-->
-
-<!--               const sender = document.getElementById('sender').value;-->
-
-<!--               const messagesContainer = document.getElementById('messages-container');-->
-
-<!--               let newMessagePosition = 'left';-->
-
-<!--               if (newMessageReceived.sender == sender) {-->
-
-<!--                   newMessagePosition = 'right';-->
-<!--               }-->
-
-<!--               const newMessage = document.createElement("div");-->
-
-<!--               newMessage.className = 'new-message ' + newMessagePosition;-->
-
-<!--               newMessage.innerHTML = `-->
-<!--                   <div class="new-message-box">-->
-<!--                       <div class="text">${newMessageReceived.text}</div>-->
-<!--                       <div class="details-container">${newMessageReceived.sender} - ${newMessageReceived.time}</div>-->
-<!--                   </div>-->
-<!--               `;-->
-
-<!--               messagesContainer.appendChild(newMessage);-->
-<!--           }-->
-
-<!--&lt;!&ndash;           function sendMessage() {&ndash;&gt;-->
-
-<!--&lt;!&ndash;               const sender = document.getElementById('sender').value;&ndash;&gt;-->
-<!--&lt;!&ndash;               const text = document.getElementById('text').value;&ndash;&gt;-->
-
-<!--&lt;!&ndash;               stompClient.send(&ndash;&gt;-->
-<!--&lt;!&ndash;                   "api/socket/chat", {},&ndash;&gt;-->
-<!--&lt;!&ndash;                   JSON.stringify({&ndash;&gt;-->
-<!--&lt;!&ndash;                       'sender':sender,&ndash;&gt;-->
-<!--&lt;!&ndash;                       'text':text&ndash;&gt;-->
-<!--&lt;!&ndash;                   })&ndash;&gt;-->
-<!--&lt;!&ndash;               );&ndash;&gt;-->
-
-<!--&lt;!&ndash;               document.getElementById('text').value = '';&ndash;&gt;-->
-<!--&lt;!&ndash;           }&ndash;&gt;-->
-
-<!--    </script>-->
-
-<!--    <style type="text/css">-->
-
-<!--        * {-->
-<!--            box-sizing: border-box;-->
-<!--            padding: 0;-->
-<!--            margin: 0;-->
-<!--        }-->
-
-<!--        #disconnect {-->
-<!--            display: none;-->
-<!--        }-->
-
-<!--        body {-->
-<!--            font-size: 20px;-->
-<!--            background-color: #bbdefb;-->
-<!--        }-->
-
-<!--        button, input {-->
-<!--            font-size: 12px;-->
-<!--            padding: 5px;-->
-<!--        }-->
-
-<!--        #button-connect,-->
-<!--        #button-disconnect {-->
-<!--            color: #ffffff;-->
-<!--            border: none;-->
-<!--            cursor: pointer;-->
-<!--        }-->
-
-<!--        #button-connect {-->
-<!--            background-color: #4caf50;-->
-<!--        }-->
-
-<!--        #button-disconnect {-->
-<!--            background-color: #d32f2f;-->
-<!--        }-->
-
-<!--        .container {-->
-<!--            display: flex;-->
-<!--            flex-direction: column;-->
-<!--            justify-content: center;-->
-<!--            height: 100vh;-->
-<!--            max-width: 600px;-->
-<!--            margin:0 auto;-->
-<!--        }-->
-
-<!--        .connect-container {-->
-<!--            display: flex;-->
-<!--            align-items: center;-->
-<!--        }-->
-
-<!--        #chat-container {-->
-<!--            flex-basis: 100%;-->
-<!--            display: flex;-->
-<!--            flex-direction: column;-->
-<!--            overflow: hidden;-->
-<!--        }-->
-
-<!--        #messages-container {-->
-<!--            flex-basis: 100%;-->
-<!--            overflow: auto;-->
-<!--            margin-left: 5px;-->
-<!--            margin-right: 5px;-->
-<!--            border: 1px solid #000000;-->
-<!--            background-color: #ffffff;-->
-<!--        }-->
-
-<!--        .new-message {-->
-<!--            display: flex;-->
-<!--        }-->
-
-<!--        .new-message-box {-->
-<!--            padding: 5px;-->
-<!--            margin: 5px;-->
-<!--            border: 1px solid #c6c6c6;-->
-<!--            border-radius: 3px;-->
-<!--        }-->
-
-<!--        .new-message-box .details-container {-->
-<!--            font-size: 12px;-->
-<!--            text-align: right;-->
-<!--        }-->
-
-<!--        .new-message.left {-->
-<!--            justify-content: flex-start;-->
-<!--        }-->
-
-<!--        .new-message.left .new-message-box {-->
-<!--            background-color: #ffccbc;-->
-<!--        }-->
-
-<!--        .new-message.right .new-message-box {-->
-<!--            background-color: #b2dfdb;-->
-<!--        }-->
-
-<!--        .new-message.right {-->
-<!--            justify-content: flex-end;-->
-<!--        }-->
-
-<!--        .send-message-container {-->
-<!--            display: flex;-->
-<!--            align-items: center;-->
-<!--        }-->
-
-<!--        .input-container {-->
-<!--            flex-basis: 100%;-->
-<!--        }-->
-
-<!--        .input-container input {-->
-<!--            width: 100%;-->
-<!--        }-->
-
-<!--        .connect-container > div,-->
-<!--        .send-message-container > div {-->
-<!--            padding: 5px;-->
-<!--        }-->
-
-<!--        #button-sendmessage {-->
-<!--            background-color: #f9a825;-->
-<!--            border: none;-->
-<!--            cursor: pointer;-->
-<!--        }-->
-
-<!--    </style>-->
-
-<!--</head>-->
-<!--<body onload="disconnect()">-->
-
-<!--<div class="container">-->
-<!--    <div class="connect-container">-->
-<!--        <div class="input-container">-->
-<!--            <input type="text" id="sender" placeholder="Choose a nickname"/>-->
-<!--        </div>-->
-<!--        <div>-->
-<!--            <button id="button-connect" onclick="connect();">-->
-<!--                CONNECT-->
-<!--            </button>-->
-<!--            <button id="button-disconnect" onclick="disconnect();">-->
-<!--                DISCONNECT-->
-<!--            </button>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--    <div id="chat-container">-->
-<!--        <div id="messages-container"></div>-->
-<!--        <div class="send-message-container">-->
-<!--            <div class="input-container">-->
-<!--                <input type="text" id="text" placeholder="Write a message"/>-->
-<!--            </div>-->
-<!--            <div>-->
-<!--                <button id="button-sendmessage" onclick="sendMessage();">SEND</button>-->
-<!--            </div>-->
-<!--        </div>-->
-<!--    </div>-->
-<!--</div>-->
-
-<!--</body>-->
-<!--</html>-->
