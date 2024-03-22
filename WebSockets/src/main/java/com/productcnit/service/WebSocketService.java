@@ -1,8 +1,6 @@
 package com.productcnit.service;
 
-import com.productcnit.dto.GenKeyPairResponse;
-import com.productcnit.dto.PublicKeyMessage;
-import com.productcnit.dto.PublicKeyMessageSend;
+import com.productcnit.dto.*;
 import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
@@ -16,6 +14,11 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
@@ -42,6 +45,43 @@ public class WebSocketService {
 
     @Autowired
     private WebClient.Builder webClientBuilder;
+
+    private SecretKey key;
+    private int KEY_SIZE = 128;
+    private int T_LEN = 128;
+    private byte[] IV;
+
+
+    public void init() throws Exception {
+        KeyGenerator generator = KeyGenerator.getInstance("AES");
+        generator.init(KEY_SIZE);
+        key = generator.generateKey();
+    }
+
+
+
+    public void initFromStrings(String secretKey, String IV){
+        key = new SecretKeySpec(decode(secretKey),"AES");
+        this.IV = decode(IV);
+    }
+
+    public String decrypt_symmetric(String encryptedMessage) {
+        try
+        {
+            byte[] messageInBytes = decode(encryptedMessage);
+            System.out.println("messageInBytes"+messageInBytes);
+            Cipher decryptionCipher = Cipher.getInstance("AES/GCM/NoPadding");
+            GCMParameterSpec spec = new GCMParameterSpec(T_LEN, IV);
+            decryptionCipher.init(Cipher.DECRYPT_MODE, key, spec);
+            byte[] decryptedBytes = decryptionCipher.doFinal(messageInBytes);
+            System.out.println("decrypted bytes"+new String(decryptedBytes));
+            return new String(decryptedBytes);
+        }
+        catch (Exception ignored)
+        {
+            return null;
+        }
+    }
     //function for generating public key for signature
     public PublicKey initFromStringsPublickey(String publickey)
     {
@@ -168,7 +208,7 @@ public class WebSocketService {
             return response;
 
     }
-    public String Sharedkey(String Recid, String publicKey, Authentication authentication) {
+    public String Sharedkey(String Recid, String SenderId, String publicKey, Authentication authentication) {
         WebClient webClient = WebClient.create("http://KEYEX-SERVICE");
         System.out.println("publickey"+publicKey);
 //        System.out.println("OwnerId"+OwnerId);
@@ -188,7 +228,7 @@ public class WebSocketService {
                             .scheme("http")
                             .host("KEYEX-SERVICE")
                             .path("/api/key/sharedkey")
-                            .queryParam("Ownerid", URLEncoder.encode(OwnerId, StandardCharsets.UTF_8))
+                            .queryParam("SenderId", URLEncoder.encode(SenderId, StandardCharsets.UTF_8))
                             .queryParam("Recid", URLEncoder.encode(Recid, StandardCharsets.UTF_8))
                             .queryParam("publicKey", URLEncoder.encode(publicKey, StandardCharsets.UTF_8));
                     return uriBuilder.build().toUri();
@@ -199,24 +239,86 @@ public class WebSocketService {
                 .block();
         return response;
     }
+    public DecMessage getDecrypt(String Message,String senderid,
+                                 String peerid,String secretkey){
 
+        String SecretKey = secretkey;
+        initFromStrings(SecretKey, "e3IYYJC2hxe24/EO");
+        WebClient webClient1 = webClientBuilder.build();
+        WebClient webClient2= WebClient.create();
 
-//    public String Sharedkey(String OwnerId,String Recid, String publickey,Authentication authentication)
-//    {
-//        WebClient webClient = WebClient.create("http://KEYEX-SERVICE");
-//
-//        Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
-//        System.out.println(jwt.getTokenValue());
-//        WebClient webClient1 =webClientBuilder.build();
-//        String response= webClient1.get()
-//                .uri("http://KEYEX-SERVICE/api/key/sharedkey?Ownerid={OwnerId}&Recid={Recid}&publicKey={publicKey}")
-//                .headers(httpHeaders -> httpHeaders.setBearerAuth(jwt.getTokenValue()))
-//                .retrieve()
-//                .bodyToMono(String.class)
-//                .block();
-//        return response;
-//
-//    }
+        URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:8085/Encrypt")
+                .queryParam("message", URLEncoder.encode(Message, StandardCharsets.UTF_8))
+                .queryParam("secretkey", URLEncoder.encode(secretkey, StandardCharsets.UTF_8))
+                .queryParam("sendid", URLEncoder.encode(senderid, StandardCharsets.UTF_8))
+                .queryParam("peerid", URLEncoder.encode(peerid, StandardCharsets.UTF_8))
+                .build()
+                .toUri();
+
+        EncMessage response = webClient2.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(EncMessage.class)
+                .block();
+
+        String secretMessage = decrypt_symmetric(response.getMessage().toString());
+        DecMessage decMessage = new DecMessage();
+        decMessage.setMessage(secretMessage);
+        decMessage.setSenderId(response.getSenderId());
+        decMessage.setRecId(response.getRecId());
+
+        return decMessage;
+
+    }
+
+    public EncMessageResponse getEncrypt(String Message,String senderid,
+                                 String peerid,String secretkey){
+
+        String SecretKey = secretkey;
+        WebClient webClient1 = webClientBuilder.build();
+        WebClient webClient2= WebClient.create();
+
+        URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:8085/Encrypt")
+                .queryParam("message", URLEncoder.encode(Message, StandardCharsets.UTF_8))
+//                .queryParam("message",Message)
+                .queryParam("secretkey", URLEncoder.encode(secretkey, StandardCharsets.UTF_8))
+                .queryParam("sendid", URLEncoder.encode(senderid, StandardCharsets.UTF_8))
+                .queryParam("peerid", URLEncoder.encode(peerid, StandardCharsets.UTF_8))
+                .build()
+                .toUri();
+
+        EncMessage response = webClient2.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(EncMessage.class)
+                .block();
+
+        EncMessageResponse encMessage = new EncMessageResponse();
+        encMessage.setMessage(response.getMessage());
+        encMessage.setSenderId(response.getSenderId());
+        encMessage.setRecId(response.getRecId());
+        encMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
+       //send encryptedmessage
+        SendEncMessage(encMessage);
+
+        return encMessage;
+
+    }
+
+    public DecMessage getMessageDecrypted(String Message,String senderid,
+                                 String peerid,String secretkey){
+
+        String SecretKey = secretkey;
+        initFromStrings(SecretKey, "e3IYYJC2hxe24/EO");
+        String secretMessage = decrypt_symmetric(Message);
+        DecMessage decMessage = new DecMessage();
+        decMessage.setMessage(secretMessage);
+        decMessage.setSenderId(senderid);
+        decMessage.setRecId(peerid);
+
+        return decMessage;
+
+    }
 
 
     public boolean getsig()
@@ -263,6 +365,20 @@ public class WebSocketService {
         outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
 
         messagingTemplate.convertAndSend("/topic/public-key",outMessage);
+
+        return outMessage;
+    }
+
+    public EncMessageResponse SendEncMessage(EncMessageResponse encMessageResponse)
+
+    {
+        EncMessageResponse outMessage= new EncMessageResponse();
+        outMessage.setMessage(encMessageResponse.getMessage());
+        outMessage.setSenderId(encMessageResponse.getSenderId());
+        outMessage.setRecId(encMessageResponse.getRecId());
+        outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
+
+        messagingTemplate.convertAndSend("/topic/EncryptedMessage",outMessage);
 
         return outMessage;
     }

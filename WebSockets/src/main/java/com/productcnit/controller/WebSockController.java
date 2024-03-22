@@ -56,6 +56,18 @@ public class WebSockController {
         return outMessage;
     }
 
+    @MessageMapping("/api/socket/EncryptedMessage")
+    @SendTo("/topic/EncryptedMessage")
+    @CrossOrigin("*")
+    public EncMessageResponse send_EncMessage(EncMessageResponse encMessage) throws Exception {
+        EncMessageResponse outMessage = new EncMessageResponse();
+        outMessage.setMessage(encMessage.getMessage());
+        outMessage.setRecId(encMessage.getRecId());
+        outMessage.setSenderId(encMessage.getSenderId());
+        outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
+        return outMessage;
+    }
+
     @MessageMapping("/api/socket/private-chat")
     @CrossOrigin("*")
     public void send_private(@Payload ChatMessage message) throws Exception {

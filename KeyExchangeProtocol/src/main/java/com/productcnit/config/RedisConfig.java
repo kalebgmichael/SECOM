@@ -1,5 +1,6 @@
 package com.productcnit.config;
 
+import com.productcnit.dto.EncKeyResponse;
 import com.productcnit.dto.GenKeyPairResponse;
 //import com.productcnit.model.GeneralKeyPair;
 import com.productcnit.model.KeyPair;
@@ -51,6 +52,18 @@ public class RedisConfig {
     @Bean
     public RedisTemplate<String, GenKeyPairResponse> GeneralkeyPairRedisTemplate() {
         RedisTemplate<String, GenKeyPairResponse> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory());
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(new JdkSerializationRedisSerializer());
+        template.setValueSerializer(new JdkSerializationRedisSerializer());
+        template.setEnableTransactionSupport(true);
+        template.afterPropertiesSet();
+        return template;
+    }
+    @Bean
+    public RedisTemplate<String, EncKeyResponse> EncKeyRedisTemplate() {
+        RedisTemplate<String, EncKeyResponse> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory());
         template.setKeySerializer(new StringRedisSerializer());
         template.setHashKeySerializer(new StringRedisSerializer());

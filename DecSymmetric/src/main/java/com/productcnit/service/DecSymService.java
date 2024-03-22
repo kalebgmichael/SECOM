@@ -1,9 +1,14 @@
 package com.productcnit.service;
 
 
+import com.productcnit.dto.DecMessage;
+import com.productcnit.dto.EncMessage;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Mono;
 
 import javax.crypto.Cipher;
@@ -12,9 +17,14 @@ import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Base64;
+
+import static org.bouncycastle.asn1.x509.ObjectDigestInfo.publicKey;
 
 @Service
 public class DecSymService {
@@ -23,6 +33,9 @@ public class DecSymService {
     private int T_LEN = 128;
     private byte[] IV;
 
+    @Autowired
+    private WebClient.Builder webClientBuilder;
+
     public void init() throws Exception {
         KeyGenerator generator = KeyGenerator.getInstance("AES");
         generator.init(KEY_SIZE);
@@ -30,7 +43,7 @@ public class DecSymService {
     }
 
     public void initFromStrings(String secretKey, String IV){
-        key = new SecretKeySpec(decode(secretKey),"AES");
+        key = new SecretKeySpec(decode(secretKey.toString()),"AES");
         this.IV = decode(IV);
     }
 
@@ -86,6 +99,44 @@ public class DecSymService {
         {
             return null;
         }
+
+    }
+
+    public DecMessage getDecrypt(String Message,String senderid,
+                                 String peerid,String secretkey){
+
+//        String SecretKey = secretkey.replaceAll("^\"|\"$", ""); // Remove leading and trailing quotation marks
+        String SecretKey = secretkey;
+     initFromStrings(SecretKey, "e3IYYJC2hxe24/EO");
+
+     System.out.println("secretkey1"+secretkey);
+
+        WebClient webClient1 = webClientBuilder.build();
+        WebClient webClient2= WebClient.create();
+
+        URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:8085/Encrypt")
+                .queryParam("message", URLEncoder.encode(Message, StandardCharsets.UTF_8))
+                .queryParam("secretkey", URLEncoder.encode(secretkey, StandardCharsets.UTF_8))
+                .queryParam("sendid", URLEncoder.encode(senderid, StandardCharsets.UTF_8))
+                .queryParam("peerid", URLEncoder.encode(peerid, StandardCharsets.UTF_8))
+                .build()
+                .toUri();
+
+        EncMessage response = webClient2.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(EncMessage.class)
+                .block();
+        System.out.println("secretkey2"+secretkey);
+        String secretMessage = decrypt(response.getMessage().toString());
+        System.out.println("secretkey3"+secretkey);
+
+        DecMessage decMessage = new DecMessage();
+        decMessage.setMessage(secretMessage);
+        decMessage.setSenderId(response.getSenderId());
+        decMessage.setRecId(response.getRecId());
+
+        return decMessage;
 
     }
 }

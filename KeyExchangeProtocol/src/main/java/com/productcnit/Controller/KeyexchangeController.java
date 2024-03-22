@@ -1,25 +1,18 @@
 package com.productcnit.Controller;
 
 
-import com.nimbusds.jose.shaded.gson.Gson;
 import com.productcnit.Service.KeyManager;
-import com.productcnit.dto.GenKeyPairResponse;
-import com.productcnit.dto.KeyPairResponse;
-import com.productcnit.dto.PublicKeyMessage;
-import com.productcnit.dto.SenRecResponse;
+import com.productcnit.dto.*;
 import com.productcnit.model.KeyPair;
+import com.productcnit.repository.EncKeyRepository;
 import com.productcnit.repository.GeneralKeyPairRepository;
 import com.productcnit.repository.KeyPairRespository;
 import jakarta.servlet.http.HttpSession;
-import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +21,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -65,6 +57,9 @@ public class KeyexchangeController {
 
     @Autowired
     private GeneralKeyPairRepository generalKeyPairRepository;
+
+    @Autowired
+    private EncKeyRepository encKeyRepository;
     @Autowired
     private final HttpSession session;
 
@@ -242,7 +237,7 @@ public class KeyexchangeController {
 //    }
 @GetMapping("/sharedkey")
 @KafkaListener(topics = "key-pair-topic", groupId = "group-id2")
-public String getsecsharedkey(@RequestParam("Ownerid") String Ownerid,@RequestParam("Recid") String Recid, @RequestParam("publicKey") String publicKey) {
+public String getsecsharedkey(@RequestParam("SenderId") String SenderId,@RequestParam("Recid") String Recid, @RequestParam("publicKey") String publicKey,Authentication authentication) {
 //    System.out.println("publickey"+publicKey);
     // Decode the public key
     String decodedPublicKey = URLDecoder.decode(publicKey, StandardCharsets.UTF_8);
@@ -256,6 +251,12 @@ public String getsecsharedkey(@RequestParam("Ownerid") String Ownerid,@RequestPa
     keyManager.initFromStringsPublickey(decodedPublicKey);
     keyManager.initFromStringsPrvkey(keys.getGen_private_Key());
     String sharedKey = keyManager.generateSharedSecret();
+    Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+    Map<String, Object> claims = jwt.getClaims();
+    String  userId =authentication.getName();
+    EncKeyResponse encKeyresponse = new EncKeyResponse(SenderId,Recid,sharedKey);
+    encKeyRepository.save(encKeyresponse);
+    System.out.println("Saved data to cache by "+ userId);
     System.out.println("the shared key is "+sharedKey);
     return sharedKey;
 }
@@ -340,6 +341,54 @@ public String getsecsharedkey(@RequestParam("Ownerid") String Ownerid,@RequestPa
     public List<Object> findGenall() {
         try {
             return generalKeyPairRepository.findall();
+        } catch (Exception e) {
+            // Handle exception (e.g., log it)
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    //Enckey Repository info
+    @PostMapping("/EncKeySave")
+    public EncKeyResponse SaveGen(@RequestBody EncKeyResponse encKeyResponse) {
+        try {
+            return encKeyRepository.save(encKeyResponse);
+        } catch (Exception e) {
+            // Handle exception (e.g., log it)
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @GetMapping("/GetEncKey/{Id}")
+    public EncKeyResponse FindEncKey(@PathVariable String Id) {
+        try {
+            EncKeyResponse keys = encKeyRepository.findKeypairbyId(Id);
+            System.out.println("this is ownerid " + keys.getOwner_Id() + "this is pair " + keys.getPair_Id());
+            return keys;
+        } catch (Exception e) {
+            // Handle exception (e.g., log it)
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @GetMapping("/DelEncKey/{Id}")
+    public String DeleteEncKey(@PathVariable String Id) {
+        try {
+            String keys = encKeyRepository.deletekeypair(Id);
+            return "keys deleted successfully";
+        } catch (Exception e) {
+            // Handle exception (e.g., log it)
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @GetMapping("/EncKeyfindall")
+    public List<Object> EncKeyfindall() {
+        try {
+            return encKeyRepository.findall();
         } catch (Exception e) {
             // Handle exception (e.g., log it)
             e.printStackTrace();
