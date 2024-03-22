@@ -6,12 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
-public class MessageToSend {
-
-    private String sender;
-    private String rec;
-    private String text;
+@NoArgsConstructor
+public class PublicKeyMessage {
+    private String senderId;
+    private String publicKey;
+    private String recId;
     private String time;
 }
+
+
+

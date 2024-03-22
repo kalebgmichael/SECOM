@@ -32,7 +32,7 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer {
     @Override
     public void configureMessageBroker(MessageBrokerRegistry config) {
-        config.enableSimpleBroker("/topic");   // enabling broker @SendTo("/topic/blabla")
+        config.enableSimpleBroker("/topic","/specific");   // enabling broker @SendTo("/topic/blabla")
         config.setApplicationDestinationPrefixes("/chat-app");  // prefix for incoming messages in @MessageMapping
     }
 
@@ -41,6 +41,7 @@ public class WebSocketConfiguration implements WebSocketMessageBrokerConfigurer 
 //        registry.addEndpoint("api/socket/chat-websocket")
         registry.addEndpoint("/chat-websocket")
                 .setAllowedOriginPatterns("*")
+//                .setHandshakeHandler(new UserHandshakeHandler())
                 .withSockJS();
     }
 }

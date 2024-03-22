@@ -8,10 +8,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MessageToSend {
-
-    private String sender;
-    private String rec;
-    private String text;
-    private String time;
+public class DecMessage {
+    String SenderId;
+    String RecId;
+    String message;
 }

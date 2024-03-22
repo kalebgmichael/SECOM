@@ -41,6 +41,7 @@ public class EncSymService {
         }
         catch (Exception ignored)
         {
+            System.out.println("error in encrypt");
             return null;
         }
 

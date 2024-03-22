@@ -9,15 +9,13 @@ import org.springframework.data.redis.core.RedisHash;
 import java.io.Serializable;
 
 
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@RedisHash("GeneralKeyPairRepository")
-public class GeneralKeyPairRepository implements Serializable {
+@RedisHash("EncKeyRepository")
+public class EncKey implements Serializable {
     @Id
     private String Owner_Id;
-    private String User_Id;
-    private String public_Key;
-    private String private_Key;
+    private String Pair_Id;
+    private String Enc_Key;
 }

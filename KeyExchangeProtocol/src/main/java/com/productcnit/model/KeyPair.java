@@ -8,10 +8,11 @@ import org.springframework.data.redis.core.RedisHash;
 
 import java.io.Serializable;
 
-@RedisHash("KeyPair")
+
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@RedisHash("KeyPair")
 public class KeyPair implements Serializable {
 
     @Id

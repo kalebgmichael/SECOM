@@ -8,9 +8,8 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ChatMessage {
-
-    private String sender;
-    private String rec;
-    private String text;
+public class PublicKeyMessageSend {
+    private String senderId;
+    private String publicKey;
+    private String recId;
 }
