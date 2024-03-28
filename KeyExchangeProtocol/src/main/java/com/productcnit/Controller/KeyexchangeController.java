@@ -18,8 +18,11 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +65,9 @@ public class KeyexchangeController {
     private EncKeyRepository encKeyRepository;
     @Autowired
     private final HttpSession session;
+
+    @Autowired
+    private WebClient.Builder webClientBuilder;
 
     private final KafkaTemplate<String, PublicKeyMessage> kafkaTemplate;
     private final KafkaTemplate<String, GenKeyPairResponse> kafkaTemplate1;
@@ -239,26 +245,49 @@ public class KeyexchangeController {
 @KafkaListener(topics = "key-pair-topic", groupId = "group-id2")
 public String getsecsharedkey(@RequestParam("SenderId") String SenderId,@RequestParam("Recid") String Recid, @RequestParam("publicKey") String publicKey,Authentication authentication) {
 //    System.out.println("publickey"+publicKey);
-    // Decode the public key
-    String decodedPublicKey = URLDecoder.decode(publicKey, StandardCharsets.UTF_8);
-    // Print the decoded public key
-    System.out.println("Decoded public key: " + decodedPublicKey);
-    GenKeyPairResponse keys = generalKeyPairRepository.findKeypairbyId(Recid);
+    try
+    {
+        WebClient webClient1 = webClientBuilder.build();
+        WebClient webClient2= WebClient.create();
+        // Decode the public key
+        String decodedPublicKey = URLDecoder.decode(publicKey, StandardCharsets.UTF_8);
+        // Print the decoded public key
+        System.out.println("Decoded public key: " + decodedPublicKey);
+        GenKeyPairResponse keys = generalKeyPairRepository.findKeypairbyId(Recid);
 //    System.out.println("publickey1"+keys.getGen_public_Key().toString());
-    System.out.println("privatekey1"+keys.getGen_private_Key().toString());
+        System.out.println("privatekey1"+keys.getGen_private_Key().toString());
 //        System.out.println("privatekey2"+keys1.getGen_private_Key().toString());
 //        KeyManager.generateKeyPair();
-    keyManager.initFromStringsPublickey(decodedPublicKey);
-    keyManager.initFromStringsPrvkey(keys.getGen_private_Key());
-    String sharedKey = keyManager.generateSharedSecret();
-    Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
-    Map<String, Object> claims = jwt.getClaims();
-    String  userId =authentication.getName();
-    EncKeyResponse encKeyresponse = new EncKeyResponse(SenderId,Recid,sharedKey);
-    encKeyRepository.save(encKeyresponse);
-    System.out.println("Saved data to cache by "+ userId);
-    System.out.println("the shared key is "+sharedKey);
-    return sharedKey;
+        keyManager.initFromStringsPublickey(decodedPublicKey);
+        keyManager.initFromStringsPrvkey(keys.getGen_private_Key());
+        String sharedKey = keyManager.generateSharedSecret();
+
+        URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:8083/getenc_sig")
+                .queryParam("message", URLEncoder.encode(sharedKey, StandardCharsets.UTF_8))
+                .build()
+                .toUri();
+
+        String response = webClient2.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+        Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+        Map<String, Object> claims = jwt.getClaims();
+        String  userId =authentication.getName();
+        EncKeyResponse encKeyresponse = new EncKeyResponse(SenderId,Recid,response);
+        encKeyRepository.save(encKeyresponse);
+        System.out.println("Saved data to cache by "+ userId);
+        System.out.println("the shared key is "+sharedKey);
+        return sharedKey;
+    }
+    catch (Exception ignored)
+    {
+        System.out.println("error");
+        return null;
+    }
+
 }
 
 
@@ -395,6 +424,25 @@ public String getsecsharedkey(@RequestParam("SenderId") String SenderId,@Request
             return null;
         }
     }
+
+    @GetMapping("/keys")
+    public List<EncKeyResponse> findByOwnerAndPairId(
+            @RequestParam String Owner_Id,
+            @RequestParam String Pair_Id) {
+        return encKeyRepository.findByOwnerAndPairId(Owner_Id, Pair_Id);
+    }
+
+    @GetMapping("/sharedkey_pair")
+    public String findByOwnerAndPairId_sharedkey(
+            @RequestParam String Owner_Id,
+            @RequestParam String Pair_Id) {
+       EncKeyResponse[] sharedkeys = encKeyRepository.findByOwnerAndPairId(Owner_Id, Pair_Id).toArray(new EncKeyResponse[0]);
+       String sharedkey= sharedkeys[0].getEnc_Key();
+       return sharedkey;
+    }
+
+
+
     // User Info
 
     @GetMapping("/userId")

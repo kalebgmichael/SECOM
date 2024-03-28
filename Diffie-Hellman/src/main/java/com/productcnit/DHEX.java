@@ -3,7 +3,11 @@ package com.productcnit;
 import com.productcnit.Service.DiffieHellmanService;
 import org.springframework.web.client.RestTemplate;
 
+import java.security.Key;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 public class DHEX {
     private static final String BASE_URL = "http://localhost:8085/dh-service";
@@ -14,29 +18,53 @@ public class DHEX {
 //
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws NoSuchAlgorithmException {
+
+        KeyPair keyPair = generateRSAKeyPair(4096);
+        // Print public key and private key in string formats
+        String publicKeyString = convertKeyToString(keyPair.getPublic());
+        String privateKeyString = convertKeyToString(keyPair.getPrivate());
+
+        System.out.println("Public Key:");
+        System.out.println(publicKeyString);
+        System.out.println(publicKeyString.length());
+        System.out.println("\nPrivate Key:");
+        System.out.println(privateKeyString);
+        System.out.println(privateKeyString.length());
+
+
         // Alice and Bob are in the same class
-        DiffieHellmanService alice = new DiffieHellmanService();
-        DiffieHellmanService bob = new DiffieHellmanService();
-
-        // Alice and Bob generate their key pairs
-        KeyPair aliceKeyPair = alice.generateKeyPair();
-        KeyPair bobKeyPair = bob.generateKeyPair();
-
-        // Alice and Bob exchange their public keys
-        String alicePublicKey = alice.generatePublicKey(aliceKeyPair);
-        String bobPublicKey = bob.generatePublicKey(bobKeyPair);
-
-        // Alice and Bob generate shared secrets
-        String aliceSharedSecret = alice.generateSharedSecret(aliceKeyPair, bobPublicKey);
-        String bobSharedSecret = bob.generateSharedSecret(bobKeyPair, alicePublicKey);
-
-        // Verify that both Alice and Bob have the same shared secret
-        if (aliceSharedSecret != null && bobSharedSecret != null && aliceSharedSecret.equals(bobSharedSecret)) {
-            System.out.println("Shared secret match: " + aliceSharedSecret);
-        } else {
-            System.out.println("Shared secret mismatch or error occurred.");
-        }
+//        DiffieHellmanService alice = new DiffieHellmanService();
+//        DiffieHellmanService bob = new DiffieHellmanService();
+//
+//        // Alice and Bob generate their key pairs
+//        KeyPair aliceKeyPair = alice.generateKeyPair();
+//        KeyPair bobKeyPair = bob.generateKeyPair();
+//
+//        // Alice and Bob exchange their public keys
+//        String alicePublicKey = alice.generatePublicKey(aliceKeyPair);
+//        String bobPublicKey = bob.generatePublicKey(bobKeyPair);
+//
+//        // Alice and Bob generate shared secrets
+//        String aliceSharedSecret = alice.generateSharedSecret(aliceKeyPair, bobPublicKey);
+//        String bobSharedSecret = bob.generateSharedSecret(bobKeyPair, alicePublicKey);
+//
+//        // Verify that both Alice and Bob have the same shared secret
+//        if (aliceSharedSecret != null && bobSharedSecret != null && aliceSharedSecret.equals(bobSharedSecret)) {
+//            System.out.println("Shared secret match: " + aliceSharedSecret);
+//        } else {
+//            System.out.println("Shared secret mismatch or error occurred.");
+//        }
+    }
+    private static KeyPair generateRSAKeyPair(int keySize) throws NoSuchAlgorithmException {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(keySize);
+        return keyPairGenerator.generateKeyPair();
+    }
+    // Convert key to string format
+    private static String convertKeyToString(Key key) {
+        byte[] keyBytes = key.getEncoded();
+        return Base64.getEncoder().encodeToString(keyBytes);
     }
 
 

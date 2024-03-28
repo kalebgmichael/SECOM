@@ -6,15 +6,9 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.util.HtmlUtils;
 
-import java.security.Principal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -48,6 +42,31 @@ public class WebSockController {
     @SendTo("/topic/public-key")
     @CrossOrigin("*")
     public PublicKeyMessage send_publickey(PublicKeyMessage publicKeyMessage) throws Exception {
+        PublicKeyMessage outMessage = new PublicKeyMessage();
+        outMessage.setPublicKey(publicKeyMessage.getPublicKey());
+        outMessage.setSenderId(publicKeyMessage.getSenderId());
+        outMessage.setRecId(publicKeyMessage.getRecId());
+        outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
+        return outMessage;
+    }
+
+    @MessageMapping("/api/socket/public_key_ca")
+    @SendTo("/topic/public_key_ca")
+    @CrossOrigin("*")
+    public Peer_publickey_ca Send_publickey_ca(Peer_publickey_ca publicKeyMessage) throws Exception {
+        Peer_publickey_ca outMessage = new Peer_publickey_ca();
+        outMessage.setSenderId(publicKeyMessage.getSenderId());
+        outMessage.setEnc_Sig_Pubkey(publicKeyMessage.getEnc_Sig_Pubkey());
+        outMessage.setPubkey_ca_sig(publicKeyMessage.getPubkey_ca_sig());
+        outMessage.setRecId(publicKeyMessage.getRecId());
+        outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
+        return outMessage;
+    }
+
+    @MessageMapping("/api/socket/peer-public-key")
+    @SendTo("/topic/peer-public-key")
+    @CrossOrigin("*")
+    public PublicKeyMessage send_peer_publickey(PublicKeyMessage publicKeyMessage) throws Exception {
         PublicKeyMessage outMessage = new PublicKeyMessage();
         outMessage.setPublicKey(publicKeyMessage.getPublicKey());
         outMessage.setSenderId(publicKeyMessage.getSenderId());

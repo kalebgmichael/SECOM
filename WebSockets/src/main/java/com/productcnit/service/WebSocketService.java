@@ -1,7 +1,6 @@
 package com.productcnit.service;
 
 import com.productcnit.dto.*;
-import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpMethod;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -41,8 +40,10 @@ public class WebSocketService {
     private PrivateKey privateKey;
     private PublicKey publicKey;
 
-    private static final String PUBLIC_KEY_STRINGS="MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCAQLQjHVXBTFYFfzlIKvuBCX6mZmAQfvGpAVSGhnXZ9g3Tha4FKsi9BTUlz2zwPtkzINLfUYIRPf71Q5hCk4Y7QAcJH3AviTnCasAwG7KBDzGYFM/ka52kiol/0vMVSle1o9d9ZTzF+9pJ+GkoF5ykFF62y7mrx9yopFSucezaCQIDAQAB";
+    private static final String PUBLIC_KEY_STRINGS1="MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCAQLQjHVXBTFYFfzlIKvuBCX6mZmAQfvGpAVSGhnXZ9g3Tha4FKsi9BTUlz2zwPtkzINLfUYIRPf71Q5hCk4Y7QAcJH3AviTnCasAwG7KBDzGYFM/ka52kiol/0vMVSle1o9d9ZTzF+9pJ+GkoF5ykFF62y7mrx9yopFSucezaCQIDAQAB";
 
+    private static final String PUBLIC_KEY_STRINGS2= "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDAhckA35Q3jrmXGmKuDlRS4IVt06uLn4GhjDGP0Dj70u8fUTq9lH1DLGh6E+H7g/rd7hEJVh9h3U2nAyjWMDsT0Qk3RPnCt1Ld8V/YY0rB62BEhcCVBFMTxqEmhMnsIP4Er2goeEpS7wfFKz97QZbWJqj60HzIUmGf65pauRiM+MkhqNDtA8FoOeM2c+AoovHXRSEw1P65GpHEE2IWJJTm7SXcvTPboyn/z78VzvzD31iBbEY8e3eitN7jhp03GjK8jrPALMq3d/as+O2UOXSc01Gn75BsYG0gvKRZxHfO7FfF8L2vkJ4wAqBxj+XMllUXrH1S1RgSd2q0Q4rK0N3/AgMBAAECggEABvUOutGu6S8RioyxN48HAb5hXq2r4QN7oMXl3fJCt5RQ1eCOmd6YLumXlknKUdeGz6b/G0eZzLnoSM/MFalv3nB1v8yQpgu6mpCoIQloNd0hVniVlA0Fn4z/B9r78mTi08fZoL9wGCfRL7viCGc/Ydp1zX05SoKc9TWDbMyMPukykhi2Cyyn61fFteiiczXGFAFA86G7vryS+XD53rk9GsV45fl0gkWAATieV9Z/IE4fsOKAzC0q07Z+0Ryn+gTwSWOJphP2Ghy4dAqgMUSQ1tLYSXxZlILvtfvkM5pNMji1DnvZgCv4y6D1hBJx/ZrOViz4jYJY1JyKuspfFeWEOQKBgQDyx7YYMg2efOvznciG7Alc/OxnPDVOnQ50KxNb/IcDZYOXM6wdrkMcKW7oo3CxDVhKWHxDyAVPDhWdU/HSeYqHp2qQ+N8BCA66O+v/IzfowKl/BFKSG1hiQEqIcwI4X74w3vQn/LfYlzHGrBJ2N49JKyJohrRufVKxmN77AM1DVQKBgQDLAX9oSRmd5JmYXSUYLnzVaIZh30qdNu2OeyLCkxBq6k7k3slnowPt1gXMarYI+BOvQOCM9OE0xaAZgDeIxE7jOC6nIDLH+9oYlJrCkTU0Aq24X3IlPrU4I+cU26SUe58UN7TG17D/SiaWtubR1UrvbOule1tkaFpM3r3lVWzEAwKBgQDyGTc7z4YHOplsWTZjXTNFGC6CD+c0mqeULnRisWLNf0iG2g9Tlbf0eFjSAlHZLO6TTMO2L9sjZ28kcVZfRbZf6hH5uUNgWvGcwy5mQW96Wc1sDRpt+njbmTL5+H4JS2h0gZBF49xNTxBjBqpuWp83Hp10UIfS+oQg98m70aPe9QKBgEBmCzrT5bJ28FqrQbc4GBXDAM5PfWX+JMIMQeyjppOkHL7yBcZAqmBqgpBkUbbqq6Pu2s0caczJ3I36ZKOYUsY17mbKChHyzS77BVUvp0cGioFwlc9G40oZ6ZZuTvljdgV93nUtu1Jg/XjWMMbj+M+XJ/Ho/gcOK4czKd50iPptAoGAPsjGRReyx6RyYCI+N/zpco4i3H1lL8cMfQZkvpHpU1SWcJP4g/iSDPoVatzBx+StCzipmxx7RfDXsIxY/RxeIPb6p4NiEl74DQ1nJWfDpLoVe2F5uof5nZtDtrJMJCVhFrLxOE0TX5ZvLNUwYh6QWydLW24jMv+COUFmlxDN1P8=";
+    private static final String PUBLIC_KEY_STRINGS= "MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAsSmzXPkrw27bTnjkPL9YadgxPV6QaDD1pPIRaoGR/NTB18OFIbaYRBhindijU7R9cvmwb7cVbtL+sOSZ6XguEmwX8POYZaXywf4IujD9LE0/Ja1JvciRULqVIWdxRghQdLWvdIh+sqkBlcvgwieUvr8xX/B+nFCPdJSSCcWqIb/R620HHe3Qg8t5ToxR94kYFO8vts3uUBy56p0hitfYyEiniB2503B4L0/CPMVTuyKMlHwQPaJZJ2QKz18GubuWLmZzCCGeYkuY2nq9Sj1MF7VUftS7vPgd9ArcfiWfMqZO4Ec9QNcpWPffrN1YmGUB9JxNMgFzEHGPodkD1G68WkhZY1z0PgFgfAaVYw0AovWsEMl9/KBJGiHnUScVLri1o8UdYPMkOnkiSisz3f68N4bAle4CT82pLt/MAGQ9Yn0LndULQLazPqs0IjffWKeD6LZaw/JZjpSYblXrdV0N2b4AXlXLmLdo9BhKTKRXwhwWsybggFlQioGxMvz8FKNpP7hwqNyChUbMnqytKWjdynlFpvazAlQ3tvq4bGWFhEMzDci0tgvkOKlyHrUBsVbwg5tQscg3yc3fbx7ojKTCFY+CnZ/X/iY7uMP/Pn6GPQsVDyxqMexNKdRmKGqQy+WR4X+R8xZzi7Zlg+k9MWKoqjfEd4kBgz4lrbAunW3ENskCAwEAAQ==";
     @Autowired
     private WebClient.Builder webClientBuilder;
 
@@ -134,6 +135,16 @@ public class WebSocketService {
         return signature1.verify(signature2);
     }
 
+    public String getUser_ca()
+    {
+        //String PUBLIC_KEY_STRINGS="MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCAQLQjHVXBTFYFfzlIKvuBCX6mZmAQfvGpAVSGhnXZ9g3Tha4FKsi9BTUlz2zwPtkzINLfUYIRPf71Q5hCk4Y7QAcJH3AviTnCasAwG7KBDzGYFM/ka52kiol/0vMVSle1o9d9ZTzF+9pJ+GkoF5ykFF62y7mrx9yopFSucezaCQIDAQAB";
+        return PUBLIC_KEY_STRINGS;
+    }
+    public String getUser_prvkey()
+    {
+      String PRIVATE_KEY_STRINGS="MIICdQIBADANBgkqhkiG9w0BAQEFAASCAl8wggJbAgEAAoGBAIBAtCMdVcFMVgV/OUgq+4EJfqZmYBB+8akBVIaGddn2DdOFrgUqyL0FNSXPbPA+2TMg0t9RghE9/vVDmEKThjtABwkfcC+JOcJqwDAbsoEPMZgUz+RrnaSKiX/S8xVKV7Wj131lPMX72kn4aSgXnKQUXrbLuavH3KikVK5x7NoJAgMBAAECgYA2uWUjxpSc0jGyTsLmZFDEkoSUBALhhwkekA69CAqpYjAsHVJPqh3Vaa9v3r4hFPAgvNS9rU3OhaGQjbMeVUxkx9GVt2LUnGMX/M5yFh7OZl7cMtebhoeEt0z5SXI3NULiEKKjHgXwTc4DaA+lcp/gxSNDQNlSFJWhfvTUQDqosQJBAJ8nPN0eOesTaCCzATO3FpkcuhQ9XLhAQTvbzYb67gtK+4Vh8pBAEFLEuKZAmBidub63Lv50cLnm/1L7+4Y6+H8CQQDOS871vu+n914il1GBZ81IqbwKki3IWx/d6iXz1UlXyOEMgniNpQYKW8EWzvrT/lXDlTe3VKgpBfllpgIBySl3AkBzmfmglxr0wDTrQ3qFCOEWOAKFPwkBIFMB2qdP+yY696z4dmvNEWuJ4zBIOjT/9Fj9yWsOEp/quHoO2c8Z8e2bAkB05i5bwRuq8ZjNPzP3gWupXk1pLBZ3b3OqW7Gv70/FR9aHMTPBCB9ZJU9Qbm9iS8AruVW+NGGqBXGisSR4AJbXAkAjPxbNZsSfeJZY/AkU2SNbIvHnLACQvRwJwibvzAkDfJ4t1gVohi+enBO91slbMT+tQGD9qnLxDJpso4B3rmSG";
+      return PRIVATE_KEY_STRINGS;
+    }
 
 
     private String encode(byte[] data)
@@ -320,6 +331,36 @@ public class WebSocketService {
 
     }
 
+    public DecMessage MessageDecrypted(String Message,String senderid,
+                                          String peerid,String secretkey){
+
+        String SecretKey = secretkey;
+        WebClient webClient1 = webClientBuilder.build();
+        WebClient webClient2= WebClient.create();
+
+        URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:8686/GetDecrypt")
+                .queryParam("message", URLEncoder.encode(Message, StandardCharsets.UTF_8))
+//                .queryParam("message",Message)
+                .queryParam("secretkey", URLEncoder.encode(secretkey, StandardCharsets.UTF_8))
+                .queryParam("sendid", URLEncoder.encode(senderid, StandardCharsets.UTF_8))
+                .queryParam("peerid", URLEncoder.encode(peerid, StandardCharsets.UTF_8))
+                .build()
+                .toUri();
+
+        DecMessage response = webClient2.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(DecMessage.class)
+                .block();
+        DecMessage decMessage = new DecMessage();
+        decMessage.setMessage(response.getMessage());
+        decMessage.setSenderId(senderid);
+        decMessage.setRecId(peerid);
+
+        return decMessage;
+
+    }
+
 
     public boolean getsig()
     {
@@ -365,6 +406,33 @@ public class WebSocketService {
         outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
 
         messagingTemplate.convertAndSend("/topic/public-key",outMessage);
+
+        return outMessage;
+    }
+
+    public PublicKeyMessage SendPublicKey_ca(Own_PublicKeyMessageSend publicKeyMessage)
+
+    {
+        PublicKeyMessage outMessage= new PublicKeyMessage();
+        outMessage.setPublicKey(publicKeyMessage.getEnc_Sig_Own_Pubkey());
+        outMessage.setSenderId(publicKeyMessage.getSenderId());
+        outMessage.setRecId(publicKeyMessage.getRecId());
+        outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
+
+        messagingTemplate.convertAndSend("/topic/peer-public-key",outMessage);
+
+        return outMessage;
+    }
+
+    public Peer_PublicKeyMessageSend SendPublicKey_ca_peer(Peer_PublicKeyMessageSend publicKeyMessage)
+
+    {
+        Peer_PublicKeyMessageSend outMessage= new Peer_PublicKeyMessageSend();
+        outMessage.setDh_Pubkey(publicKeyMessage.getDh_Pubkey());
+        outMessage.setCa_Pubkey(publicKeyMessage.getCa_Pubkey());
+        outMessage.setSenderId(publicKeyMessage.getSenderId());
+        outMessage.setRecId(publicKeyMessage.getRecId());
+        messagingTemplate.convertAndSend("/topic/public_key_ca",outMessage);
 
         return outMessage;
     }

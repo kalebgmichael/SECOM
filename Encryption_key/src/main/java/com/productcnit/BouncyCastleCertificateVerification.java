@@ -6,8 +6,12 @@ import org.bouncycastle.cert.jcajce.JcaX509ContentVerifierProviderBuilder;
 import org.bouncycastle.operator.ContentVerifierProvider;
 
 import java.io.InputStream;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Base64;
 
 public class BouncyCastleCertificateVerification {
 
@@ -30,11 +34,20 @@ public class BouncyCastleCertificateVerification {
     }
 
     public static void main(String[] args) {
+
         // Load CA's X.509 certificate
         X509Certificate caCertificate = loadCACertificate("ca-cert.pem");
-
         // Load the certificate to be verified
         X509Certificate certificateToVerify = loadCertificate("client-combined.pem");
+
+        // Extract the public keys
+        PublicKey caPublicKey = extractPublicKey(caCertificate);
+        PublicKey certificatePublicKey = extractPublicKey(certificateToVerify);
+
+        // Display the encoded public keys
+        System.out.println("CA Public Key: " + encode(caPublicKey.getEncoded()));
+        System.out.println("CA Public Key size: " + encode(caPublicKey.getEncoded()).length());
+        System.out.println("Certificate Public Key: " + certificatePublicKey);
 
         // Verify the certificate
         boolean isCertificateValid = verifyCertificate(certificateToVerify, caCertificate);
@@ -64,5 +77,13 @@ public class BouncyCastleCertificateVerification {
             e.printStackTrace();
             return null;
         }
+    }
+    // Method to extract the public key from an X.509 certificate
+    public static PublicKey extractPublicKey(X509Certificate certificate) {
+        return certificate.getPublicKey();
+    }
+    public static String encode(byte[] data)
+    {
+        return Base64.getEncoder().encodeToString(data);
     }
 }

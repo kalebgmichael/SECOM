@@ -1,7 +1,6 @@
 package com.productcnit.repository;
 
 import com.productcnit.dto.EncKeyResponse;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
@@ -41,7 +40,7 @@ public class EncKeyRepository {
 
     public List<EncKeyResponse> findByOwnerAndPairId(String Owner_Id, String Pair_Id) {
         // This method assumes that you have stored EncKey objects with Owner_Id as the hash key.
-        // You can implement custom logic to filter by both Owner_Id and Pair_Id.
+        // implement custom logic to filter by both Owner_Id and Pair_Id.
         // Since Redis does not natively support querying by multiple fields in a hash, you may need to retrieve all EncKey objects for the given Owner_Id and then filter them in Java.
         List<EncKeyResponse> allKeys = findAll1();
         return allKeys.stream()
