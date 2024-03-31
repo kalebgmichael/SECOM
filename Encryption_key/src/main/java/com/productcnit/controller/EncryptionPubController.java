@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.crypto.SecretKey;
 import java.awt.*;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -80,22 +81,20 @@ public class EncryptionPubController {
         String publickey_peer1 = URLDecoder.decode(publickey_peer, StandardCharsets.UTF_8);
         System.out.println("this is the public key"+publickey_peer1);
         System.out.println("this is the public key size"+publickey_peer1.length());
-        encryptionPubService.initFromStringsprivate();
-        encryptionPubService.initFromStrings();
-        byte[] compressedPublicKey =encryptionPubService.Compress(message1.getBytes());
-        String publicKeyString = new String(compressedPublicKey, "UTF-8");
-        System.out.println("this is the compressedPublicKey key size"+compressedPublicKey.length);
-        byte[] decryptedAndDecompressedPublicKey= encryptionPubService.Decompress(compressedPublicKey);
-        String originalPublicKey = new String(decryptedAndDecompressedPublicKey);
-        System.out.println("Original Public Key: " + originalPublicKey);
-        System.out.println("the message to be sent"+ message);
-        System.out.println("the message to be sent length"+ message.length());
+        encryptionPubService.initFromStrings_peer(publickey_peer1);
+        SecretKey key= encryptionPubService.initFromStrings("e3IYYJC2hxe24/EO");
+        String sym_key= encryptionPubService.encode(key.getEncoded());
+        System.out.println("this is the sym_key"+sym_key);
+        String encryptedPubKey= encryptionPubService.encrypt_sym(message1);
+        System.out.println("the encryptedPubKey to be sent"+ encryptedPubKey);
+        System.out.println("the encryptedPubKey to be sent length"+ message.length());
 //        try
 //        {
-            String encryptedMessage= encryptionPubService.encrypt(publicKeyString);
+            String encryptedMessage= encryptionPubService.encrypt_peer(sym_key);
             System.out.println("encrypted message by public key"+encryptedMessage);
+            encryptionPubService.initFromStringsprivate();
             String signature_key=  encryptionPubService.generateSignature_peer(encryptedMessage);
-            String enc_sign= encryptedMessage+"_.._"+ signature_key;
+            String enc_sign= encryptedMessage+"_.._"+ signature_key+"_.._"+encryptedPubKey;
             //String encodedMessage = URLEncoder.encode(encryptedMessage, StandardCharsets.UTF_8);
             return enc_sign;
 //        }

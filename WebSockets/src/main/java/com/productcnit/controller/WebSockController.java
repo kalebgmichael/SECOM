@@ -63,6 +63,19 @@ public class WebSockController {
         return outMessage;
     }
 
+    @MessageMapping("/api/socket/public_key_ca_rec")
+    @SendTo("/topic/public_key_ca_rec")
+    @CrossOrigin("*")
+    public Peer_publickey_ca Send_publickey_ca_rec(Peer_publickey_ca publicKeyMessage) throws Exception {
+        Peer_publickey_ca outMessage = new Peer_publickey_ca();
+        outMessage.setSenderId(publicKeyMessage.getSenderId());
+        outMessage.setEnc_Sig_Pubkey(publicKeyMessage.getEnc_Sig_Pubkey());
+        outMessage.setPubkey_ca_sig(publicKeyMessage.getPubkey_ca_sig());
+        outMessage.setRecId(publicKeyMessage.getRecId());
+        outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
+        return outMessage;
+    }
+
     @MessageMapping("/api/socket/peer-public-key")
     @SendTo("/topic/peer-public-key")
     @CrossOrigin("*")

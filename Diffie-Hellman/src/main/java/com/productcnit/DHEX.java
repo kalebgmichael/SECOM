@@ -3,34 +3,55 @@ package com.productcnit;
 import com.productcnit.Service.DiffieHellmanService;
 import org.springframework.web.client.RestTemplate;
 
-import java.security.Key;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
+import java.awt.*;
+import java.security.*;
 import java.util.Base64;
 
 public class DHEX {
     private static final String BASE_URL = "http://localhost:8085/dh-service";
+    private PrivateKey privateKey;
+    private PublicKey publicKey;
 
+    public void init() throws NoSuchAlgorithmException {
+        KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
+        generator.initialize(2048);
+        KeyPair pair = generator.generateKeyPair();
+        privateKey=pair.getPrivate();
+        publicKey=pair.getPublic();
 
+    }
+    public void printkeys()
+    {
+        System.out.println("privatekey\n"+encode(privateKey.getEncoded()));
+        System.out.println("publickey\n"+encode(publicKey.getEncoded()));
+    }
+    public String encode(byte[] data)
+    {
+        return Base64.getEncoder().encodeToString(data);
+    }
 
-
-//
-
-
+    public byte[] decode(String data)
+    {
+        return  Base64.getDecoder().decode(data);
+    }
     public static void main(String[] args) throws NoSuchAlgorithmException {
 
-        KeyPair keyPair = generateRSAKeyPair(4096);
-        // Print public key and private key in string formats
-        String publicKeyString = convertKeyToString(keyPair.getPublic());
-        String privateKeyString = convertKeyToString(keyPair.getPrivate());
+        DHEX dhex = new DHEX();
+        dhex.init();
+        dhex.printkeys();
 
-        System.out.println("Public Key:");
-        System.out.println(publicKeyString);
-        System.out.println(publicKeyString.length());
-        System.out.println("\nPrivate Key:");
-        System.out.println(privateKeyString);
-        System.out.println(privateKeyString.length());
+
+//        KeyPair keyPair = generateRSAKeyPair(2048);
+//        // Print public key and private key in string formats
+//        String publicKeyString = convertKeyToString(keyPair.getPublic());
+//        String privateKeyString = convertKeyToString(keyPair.getPrivate());
+//
+//        System.out.println("Public Key:");
+//        System.out.println(publicKeyString);
+//        System.out.println(publicKeyString.length());
+//        System.out.println("\nPrivate Key:");
+//        System.out.println(privateKeyString);
+//        System.out.println(privateKeyString.length());
 
 
         // Alice and Bob are in the same class

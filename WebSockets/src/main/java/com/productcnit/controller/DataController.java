@@ -16,6 +16,8 @@ import java.awt.*;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 
 @RestController
@@ -101,6 +103,99 @@ public class DataController {
             return null;
         }
     }
+    @GetMapping("/rec_dh_pub_key")
+    public PublicKeyMessage rec_dh_pub_key(@RequestParam("encryptedmessage") String encryptedmessage,@RequestParam("publickey") String publickey,
+                                 @RequestParam("sendid") String sendid,@RequestParam("peerid") String peerid,Authentication authentication)
+    {
+        Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+        Map<String, Object> claims = jwt.getClaims();
+        String Ownerid = (String) claims.get("Owner_ID");
+        System.out.println("OwnerId"+Ownerid);
+        WebClient webClient1 = webClientBuilder.build();
+        WebClient webClient2= WebClient.create();
+
+        URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:8084/get_enc_sig_verif_pubkey")
+                .queryParam("encryptedmessage", URLEncoder.encode(encryptedmessage, StandardCharsets.UTF_8))
+                .queryParam("publickey", URLEncoder.encode(publickey, StandardCharsets.UTF_8))
+                .queryParam("sendid", URLEncoder.encode(sendid, StandardCharsets.UTF_8))
+                .queryParam("peerid", URLEncoder.encode(peerid, StandardCharsets.UTF_8))
+                .build()
+                .toUri();
+
+        String response = webClient2.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+        String[] data= response.split("_.._");
+        String dh_pub_key=data[0];
+        String pub_key_ca=data[1];
+        System.out.println("dh_pub_key"+dh_pub_key);
+        System.out.println("pub_key_ca"+pub_key_ca);
+        System.out.println("decrypted sharedkey is"+response);
+
+        GenKeyPairResponse secretMessage = webSocketService.getkeypair(authentication,Ownerid);
+        String publickey_peer= pub_key_ca;
+        URI uri1 = UriComponentsBuilder.fromHttpUrl("http://localhost:8083/getenc_sig_peer")
+                .queryParam("message", URLEncoder.encode(secretMessage.getGen_public_Key(), StandardCharsets.UTF_8))
+                .queryParam("publickey_peer", URLEncoder.encode(publickey_peer, StandardCharsets.UTF_8))
+                .build()
+                .toUri();
+
+        String response1 = webClient2.get()
+                .uri(uri1)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+        System.out.println("this is the response form getenc_sig_peer"+response1);
+
+        Peer_PublicKeyMessageSend ResMessage= new Peer_PublicKeyMessageSend();
+        ResMessage.setSenderId(secretMessage.getGen_Owner_Id());
+        ResMessage.setDh_Pubkey(response1);
+        ResMessage.setCa_Pubkey(pub_key_ca);
+        ResMessage.setRecId(sendid);
+        webSocketService.SendPublicKey_ca_peer_rec(ResMessage);
+
+        PublicKeyMessage outMessage= new PublicKeyMessage();
+        outMessage.setPublicKey(dh_pub_key);
+        outMessage.setSenderId(sendid);
+        outMessage.setRecId(peerid);
+        outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
+        return outMessage;
+    }
+    @GetMapping("/rec_dh_pub_key_rec")
+    public PublicKeyMessage rec_dh_pub_key_rec(@RequestParam("encryptedmessage") String encryptedmessage,
+                                           @RequestParam("sendid") String sendid,@RequestParam("peerid") String peerid,Authentication authentication)
+    {
+        Jwt jwt = ((JwtAuthenticationToken) authentication).getToken();
+        Map<String, Object> claims = jwt.getClaims();
+        String Ownerid = (String) claims.get("Owner_ID");
+        System.out.println("OwnerId"+Ownerid);
+        WebClient webClient1 = webClientBuilder.build();
+        WebClient webClient2= WebClient.create();
+
+        URI uri = UriComponentsBuilder.fromHttpUrl("http://localhost:8084/get_enc_sig_verif_pubkey_rec")
+                .queryParam("encryptedmessage", URLEncoder.encode(encryptedmessage, StandardCharsets.UTF_8))
+                .queryParam("sendid", URLEncoder.encode(sendid, StandardCharsets.UTF_8))
+                .queryParam("peerid", URLEncoder.encode(peerid, StandardCharsets.UTF_8))
+                .build()
+                .toUri();
+
+        String response = webClient2.get()
+                .uri(uri)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+        System.out.println("decrypted sharedkey is"+response);
+
+        PublicKeyMessage outMessage= new PublicKeyMessage();
+        outMessage.setPublicKey(response);
+        outMessage.setSenderId(sendid);
+        outMessage.setRecId(peerid);
+        outMessage.setTime(new SimpleDateFormat("HH:mm dd-MM-yyyy").format(new Date()));
+        return outMessage;
+    }
+
 
 
     @GetMapping("/send_pub_own_ca")
