@@ -15,20 +15,16 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
-        <module>Mutual-server</module>
-        <module>Mutual-client</module>
-        <module>Encryption_key</module>
-        <module>DecryptionKey</module>
-        <module>EncSymmetric</module>
-        <module>DecSymmetric</module>
-        <module>Diffie-Hellman</module>
-        <module>Shore-control</module>
-        <module>Ship-A</module>
-        <module>keyexchange</module>
-        <module>KeyExchangeProtocol</module>
-        <module>Discovery-server</module>
+        <module>encryption_key</module>
+        <module>decryption_key</module>
+        <module>enc_symmetric</module>
+        <module>dec_symmetric</module>
+        <module>shore-control</module>
+        <module>ship-a</module>
+        <module>key_exchange_protocol</module>
+        <module>discovery-server</module>
         <module>api-gateway</module>
-        <module>WebSockets</module>
+        <module>web_sockets</module>
     </modules>
 
     <properties>
@@ -58,20 +54,37 @@
     </dependencyManagement>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
+            <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <configuration>
+                        <excludes>
+                            <exclude>
+                                <groupId>org.project-lombok</groupId>
+                                <artifactId>lombok</artifactId>
+                            </exclude>
+                        </excludes>
+                        <image>
+                            <name>microservices-livorno_secom/${project.artifactId}</name>
+                        </image>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>com.google.cloud.tools</groupId>
+                    <artifactId>jib-maven-plugin</artifactId>
+                    <version>3.2.1</version>
+                    <configuration>
+                        <from>
+                            <image>eclipse-temurin:17.0.4.1_1-jre</image>
+                        </from>
+                        <to>
+                            <image>microservices-livorno_secom/${project.artifactId}</image>
+                        </to>
+                    </configuration>
+                </plugin>
+            </plugins>
+
     </build>
 
 </project>
