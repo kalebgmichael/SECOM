@@ -7,9 +7,25 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
-  broker1:
+#  broker1:
+#    image: confluentinc/cp-kafka:7.0.1
+#    container_name: broker1
+#    ports:
+#      - "9092:9092"
+#    depends_on:
+#      - zookeeper1
+#    environment:
+#      KAFKA_BROKER_ID: 1
+#      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper1:2181'
+#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker1:29092
+#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  broker:
     image: confluentinc/cp-kafka:7.0.1
-    container_name: broker1
+    container_name: broker
     ports:
       - "9092:9092"
     depends_on:
@@ -18,16 +34,137 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper1:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker1:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://broker:29092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    environment:
+      - QUERY_PORT=9411
+      - STORAGE_TYPE=mem
+      - ZIPKIN_BASE_URL=http://localhost:9411
+
+#
+#  discovery-server:
+#    image: microservices-livorno_secom/discovery-server:latest
+#    container_name: discovery-server
+#    ports:
+#      - "8888:8761"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    depends_on:
+#      - zipkin
+#
+#  api-gateway:
+#    image: microservices-livorno_secom/api-gateway:latest
+#    container_name: api-gateway
+#    ports:
+#      - "8988:8989"
+#    expose:
+#      - "8988"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY= TRACE
+#    depends_on:
+#      - zipkin
+#      - discovery-server
+#
+#  websocket-service:
+#    container_name: websocket-service
+#    image: microservices-livorno_secom/web_sockets:latest
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    depends_on:
+#      - discovery-server
+#      - api-gateway
+#      - keygenerator-service
+#      - zipkin
+#    ports:
+#      - "8909:8909"
+#
+#  keygenerator-service:
+#    container_name: keygenerator-service
+#    image: microservices-livorno_secom/key_exchange_protocol:latest
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    depends_on:
+#      - discovery-server
+#      - api-gateway
+#      - zipkin
+#    ports:
+#      - "8906:8906"
+#  EncSym-service:
+#    container_name: EncSym-service
+#    image: microservices-livorno_secom/enc_symmetric:latest
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    depends_on:
+#      - discovery-server
+#      - api-gateway
+#    ports:
+#      - "8903:8903"
+#  DecSym-service:
+#    container_name: DecSym-service
+#    image: microservices-livorno_secom/dec_symmetric:latest
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    depends_on:
+#      - discovery-server
+#      - api-gateway
+#    ports:
+#      - "8901:8901"
+#  EncAsym-service:
+#    container_name: EncAsym-service
+#    image: microservices-livorno_secom/encryption_key:latest
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    depends_on:
+#      - discovery-server
+#      - api-gateway
+#    ports:
+#      - "8904:8904"
+#  DecAsym-service:
+#    container_name: DecAsym-service
+#    image: microservices-livorno_secom/decryption_key:latest
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    depends_on:
+#      - discovery-server
+#      - api-gateway
+#    ports:
+#      - "8902:8902"
+#  Shore-service:
+#    container_name: Shore-service
+#    image: microservices-livorno_secom/ship-a:latest
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    depends_on:
+#      - discovery-server
+#      - api-gateway
+#    ports:
+#      - "8908:8908"
+#  Ship-service:
+#    container_name: Ship-service
+#    image: microservices-livorno_secom/shore-control:latest
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=docker
+#    depends_on:
+#      - discovery-server
+#      - api-gateway
+#    ports:
+#      - "8907:8907"
   ## Keycloak Config with Mysql database
   keycloak-mysql:
     container_name: keycloak-mysql
     image: mysql:5.7
     volumes:
-      - ./mysql_keycloak_data:/var/lib/mysql
+      - ./mysql_keycloak_datay:/var/lib/mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: keycloak
@@ -52,7 +189,15 @@ services:
       - ./realms/:/opt/keycloak/data/import/
     depends_on:
       - keycloak-mysql
-  cache:
+#  cache:
+#    image: redis:6.2-alpine
+#    restart: always
+#    ports:
+#      - '6379:6379'
+#    command: redis-server --save 20 1 --loglevel warning --requirepass root@123
+#    volumes:
+#      - cache:/data
+  redis-service:
     image: redis:6.2-alpine
     restart: always
     ports:
@@ -60,11 +205,6 @@ services:
     command: redis-server --save 20 1 --loglevel warning --requirepass root@123
     volumes:
       - cache:/data
-  grafana1:
-    image: grafana/grafana:latest
-    container_name: grafana1
-    ports:
-      - "3000:3000"
 volumes:
     cache:
       driver: local

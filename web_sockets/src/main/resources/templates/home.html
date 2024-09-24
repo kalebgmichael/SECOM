@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Client</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f2f2f2;
+}
+
+.container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    padding-top: 50px; /* Adjusted to avoid overlap with the profile */
+}
+
+.user-profile {
+    position: fixed;
+    top: 10px;
+    right: 20px;
+    background-color: #f9f9f9;
+    padding: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 5px;
+    z-index: 1000; /* Ensures it's above other elements */
+}
+.textarea-large {
+    height: 2000px; /* Adjusted height */
+    width: 100%; /* Full container width */
+}
+
+
+     .message-box {
+            border: 2px solid #ccc;
+            background-color: #fff;
+            padding: 10px;
+            width: 80%;
+            max-width: 1000px;
+            height: 300px; /* Increased height */
+            overflow-y: auto;
+            margin-top: 20px;
+            z-index: 1000;
+        }
+
+h2, p {
+    margin: 5px 0;
+}
+
+.form-section {
+    width: 50%;
+    display: flex;
+    justify-content: right;
+    margin-top: 10px;
+}
+
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+</head>
+<body>
+<div class="container">
+
+    <div class="user-profile">
+        <h2>Welcome, <span th:text="${username}" class="text-primary"></span>!</h2>
+        <p>OwnerId: <span th:text="${ownerId}" id="ownerId" class="text-info"></span></p>
+        <p>UserId: <span th:text="${userId}" id="userId" class="text-info"></span></p>
+    </div>
+
+</div>
+
+    <div class="container">
+    <div class="text-center">
+        <div class="text-center">
+            <h1 class="display-4">SECOM Input form</h1>
+            <form id="encryptionForm">
+                <input type="text" id="senderid" placeholder="Sender ID" class="form-control" required>
+                <input type="text" id="secretkey" placeholder="Secret Key" class="form-control" required>
+                <input type="text" id="peerid" placeholder="Peer ID" class="form-control" required>
+                <textarea id="encryptedMessage" class="form-control textarea-large" placeholder="Encrypted Message" required></textarea>
+                <button type="submit" class="btn btn-primary">Encrypt and Send</button>
+            </form>
+        </div>
+        <div id="messages" class="message-box"></div>
+        <div id="Encrypted-messages" class="message-box"></div>
+    </div>
+</div>
+
+<script src="/js/main.js"></script>
+</body>
+</html>
